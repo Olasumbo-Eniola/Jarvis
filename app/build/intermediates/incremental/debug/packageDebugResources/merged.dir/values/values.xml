@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Nova</string>
+    <string name="service_description">Lets Nova read the screen, press buttons and fill in forms when you ask by voice. It works alongside your screen reader.</string>
+</resources>
