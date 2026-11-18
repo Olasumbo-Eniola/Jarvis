@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.media.AudioManager
+import android.media.ToneGenerator
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -16,18 +17,34 @@ import android.os.Looper
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import com.rementia.openwakeword.lib.WakeWordEngine
+import com.rementia.openwakeword.lib.model.DetectionMode
+import com.rementia.openwakeword.lib.model.WakeWordModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
 /**
- * Keeps listening in the background. Version 0.1 uses Android's own speech recogniser and
- * looks for the wake name in the text. Planned: replace this with an on-device wake-word
- * model (openWakeWord) so it waits using almost no battery.
+ * Works like "Hey Google":
+ *   WAKE     a small on-device model listens for the wake phrase (no beeps, little battery)
+ *   SESSION  one beep, then the speech recogniser takes your command; it keeps listening for
+ *            follow-ups until you go quiet, then plays a closing beep and returns to WAKE
+ *   LOOP     fallback if the wake model cannot start: the old always-listening mode, where the
+ *            name must be said inside the sentence
  */
 class VoiceService : Service() {
 
     companion object {
         @Volatile
         var running = false
+        @Volatile
+        var modeName = "starting"
     }
+
+    private enum class Mode { WAKE, SESSION, LOOP }
 
     private val main = Handler(Looper.getMainLooper())
     private lateinit var prefs: Prefs
@@ -37,6 +54,13 @@ class VoiceService : Service() {
     private var listening = false
     private var sttFallback = false
     private var muted = false
+    private var mode = Mode.LOOP
+
+    private var wake: WakeWordEngine? = null
+    private var wakeScope: CoroutineScope? = null
+    private var wakeJob: Job? = null
+    private var tone: ToneGenerator? = null
+    private var silentTurns = 0
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -47,11 +71,12 @@ class VoiceService : Service() {
         speaker = Speaker(this) { maybeListen() }
         brain = Brain(this, prefs) { text -> speaker.speak(text, brain.pack.tts) }
         brain.onSettled = { maybeListen() }
-        brain.onQuit = {
-            main.postDelayed({ stopSelf() }, 1500)
-        }
+        brain.onQuit = { main.postDelayed({ stopSelf() }, 1500) }
         running = true
         quiet(true)
+        try { tone = ToneGenerator(AudioManager.STREAM_MUSIC, 70) } catch (e: Exception) { tone = null }
+        startWake()
+        brain.welcome()
         maybeListen()
     }
 
@@ -60,19 +85,101 @@ class VoiceService : Service() {
     override fun onDestroy() {
         running = false
         main.removeCallbacksAndMessages(null)
+        stopWake(release = true)
         try { rec?.destroy() } catch (e: Exception) {}
         rec = null
+        try { tone?.release() } catch (e: Exception) {}
         speaker.shutdown()
         quiet(false)
         super.onDestroy()
     }
+
+    // ------------------------------------------------------------------ wake word
+
+    private fun startWake() {
+        if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            enterLoop("Microphone permission is missing.")
+            return
+        }
+        try {
+            // Put your own trained model in app/src/main/assets/nova.onnx to wake on "Nova".
+            val hasNova = assets.list("")?.contains("nova.onnx") == true
+            val model = if (hasNova) WakeWordModel("Nova", "nova.onnx", 0.5f)
+            else WakeWordModel("Hey Jarvis", "hey_jarvis_v0.1.onnx", 0.5f)
+            brain.wakePhrase = if (hasNova) "Hey Nova" else "Hey Jarvis"
+
+            val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+            val engine = WakeWordEngine(this, listOf(model), DetectionMode.SINGLE_BEST, 2000L, CoroutineScope(Dispatchers.Default))
+            wakeScope = scope
+            wake = engine
+            wakeJob = scope.launch {
+                engine.detections.collect { onWakeHeard() }
+            }
+            engine.start()
+            mode = Mode.WAKE
+            modeName = "waiting for \"" + brain.wakePhrase + "\""
+        } catch (e: Throwable) {
+            stopWake(release = true)
+            enterLoop("The wake word could not start: " + e.javaClass.simpleName)
+        }
+    }
+
+    private fun stopWake(release: Boolean) {
+        try { wake?.stop() } catch (e: Throwable) {}
+        if (release) {
+            try { wakeJob?.cancel() } catch (e: Throwable) {}
+            try { wake?.release() } catch (e: Throwable) {}
+            try { wakeScope?.cancel() } catch (e: Throwable) {}
+            wake = null
+            wakeJob = null
+            wakeScope = null
+        }
+    }
+
+    private fun enterLoop(why: String) {
+        mode = Mode.LOOP
+        modeName = "listening for the name in each sentence ($why)"
+        speaker.speak("$why I will listen for my name in each sentence instead.", "en-NG")
+        maybeListen()
+    }
+
+    private fun onWakeHeard() {
+        if (mode != Mode.WAKE) return
+        mode = Mode.SESSION
+        silentTurns = 0
+        try { wake?.stop() } catch (e: Throwable) {}
+        beep(true)
+        // give the microphone a moment to be released before the recogniser takes it
+        main.postDelayed({ if (mode == Mode.SESSION) listen() }, 350)
+    }
+
+    private fun endSession() {
+        if (mode != Mode.SESSION) return
+        try { rec?.cancel() } catch (e: Exception) {}
+        listening = false
+        beep(false)
+        mode = Mode.WAKE
+        main.postDelayed({
+            if (mode == Mode.WAKE) {
+                try { wake?.start() } catch (e: Throwable) { enterLoop("The wake word stopped working.") }
+            }
+        }, 400)
+    }
+
+    private fun beep(start: Boolean) {
+        try {
+            tone?.startTone(if (start) ToneGenerator.TONE_PROP_BEEP else ToneGenerator.TONE_PROP_BEEP2, 120)
+        } catch (e: Exception) {}
+    }
+
+    // ------------------------------------------------------------------ foreground notification, sounds
 
     private fun startInForeground() {
         val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         nm.createNotificationChannel(NotificationChannel("nova", "Nova", NotificationManager.IMPORTANCE_LOW))
         val n = Notification.Builder(this, "nova")
             .setContentTitle("Nova is listening")
-            .setContentText("Say \"" + prefs.wakeName + "\" then a command")
+            .setContentText("Waiting for the wake phrase")
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .setOngoing(true)
             .build()
@@ -97,8 +204,10 @@ class VoiceService : Service() {
         muted = on
     }
 
+    // ------------------------------------------------------------------ speech recogniser
+
     private fun maybeListen() {
-        if (!running || listening || speaker.busy || brain.busy) return
+        if (!running || mode == Mode.WAKE || listening || speaker.busy || brain.busy) return
         listen()
     }
 
@@ -142,7 +251,6 @@ class VoiceService : Service() {
         main.postDelayed({ maybeListen() }, ms)
     }
 
-    // Seen at the start of a new language: if the phone has no recogniser for it, fall back to English.
     private fun languageMissing() {
         if (!sttFallback && brain.pack.stt != "en-NG") {
             sttFallback = true
@@ -152,6 +260,16 @@ class VoiceService : Service() {
             )
         }
         retryIn(300)
+    }
+
+    /** Nothing was said or nothing understood. In a session that means "I'm done". */
+    private fun quietTurn() {
+        if (mode == Mode.SESSION) {
+            silentTurns++
+            if (silentTurns >= 1) endSession() else retryIn(150)
+        } else {
+            retryIn(150)
+        }
     }
 
     private val listener = object : RecognitionListener {
@@ -166,18 +284,23 @@ class VoiceService : Service() {
         override fun onError(error: Int) {
             listening = false
             when (error) {
-                9 -> stopSelf()                          // permissions missing
-                12, 13 -> languageMissing()              // language not supported / not available
-                5, 8 -> { resetRecognizer(); retryIn(800) } // client error / recogniser busy
-                2, 4 -> retryIn(2000)                    // network / server
-                else -> retryIn(150)                     // 6 = silence, 7 = no match: just listen again
+                9 -> stopSelf()                                  // permissions missing
+                12, 13 -> languageMissing()                      // language not supported / available
+                5, 8 -> { resetRecognizer(); retryIn(800) }      // client error / recogniser busy
+                2, 4 -> { if (mode == Mode.SESSION) endSession() else retryIn(2000) } // network / server
+                else -> quietTurn()                              // 6 silence, 7 no match
             }
         }
 
         override fun onResults(results: Bundle?) {
             listening = false
             val list = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION) ?: arrayListOf()
-            if (list.isNotEmpty()) brain.heard(list)
+            if (list.isEmpty()) {
+                quietTurn()
+                return
+            }
+            silentTurns = 0
+            brain.heard(list, addressed = mode == Mode.SESSION)
             maybeListen()
         }
     }

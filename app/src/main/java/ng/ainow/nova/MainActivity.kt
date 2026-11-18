@@ -73,7 +73,8 @@ class MainActivity : Activity() {
         }
         col.addView(langBtn)
 
-        col.addView(label("Name to call me by"))
+        col.addView(label("Wake phrase is Hey Jarvis until a Nova wake model is added. Say it, wait for the beep, then give your command."))
+        col.addView(label("Name Nova also answers to inside a sentence (used if the wake model cannot start)"))
         nameField = EditText(this)
         nameField.setText(prefs.wakeName)
         nameField.contentDescription = "Name to call the assistant by"
@@ -136,9 +137,8 @@ class MainActivity : Activity() {
     private fun testAi() {
         save()
         status.text = "Testing AI..."
-        AiClient(prefs).ask("", "Reply with the single word: ok") { r ->
-            status.text = if (r.ok) "AI works. Reply: " + r.text.take(40)
-            else "AI failed: " + r.error
+        AiClient(prefs).diagnose { report ->
+            status.text = report
             status.sendAccessibilityEvent(android.view.accessibility.AccessibilityEvent.TYPE_VIEW_FOCUSED)
         }
     }
@@ -157,7 +157,7 @@ class MainActivity : Activity() {
         status.text = "Accessibility: " + (if (serviceOn()) "on" else "off") +
             ". Microphone: " + (if (has(Manifest.permission.RECORD_AUDIO)) "allowed" else "not allowed") +
             ". Contacts: " + (if (has(Manifest.permission.READ_CONTACTS)) "allowed" else "not allowed") +
-            ". Nova: " + (if (VoiceService.running) "listening" else "stopped") + "."
+            ". Nova: " + (if (VoiceService.running) "running, " + VoiceService.modeName else "stopped") + "."
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {

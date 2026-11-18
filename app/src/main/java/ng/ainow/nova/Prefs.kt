@@ -35,5 +35,9 @@ class Prefs(ctx: Context) {
         get() = sp.getBoolean("quietEars", true)
         set(v) { sp.edit().putBoolean("quietEars", v).apply() }
 
+    var onboarded: Boolean
+        get() = sp.getBoolean("onboarded", false)
+        set(v) { sp.edit().putBoolean("onboarded", v).apply() }
+
     val aiAllowed: Boolean get() = aiKey.isNotBlank() && aiConsent
 }

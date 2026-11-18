@@ -12,7 +12,10 @@ android {
         minSdk = 26
         targetSdk = 34
         versionCode = 1
-        versionName = "0.1"
+        versionName = "0.2"
+        ndk {
+            abiFilters.addAll(listOf("arm64-v8a", "armeabi-v7a"))
+        }
     }
 
     buildTypes {
@@ -32,4 +35,10 @@ android {
 dependencies {
     // On-device OCR. Bundled model: works offline immediately, adds a few MB.
     implementation("com.google.mlkit:text-recognition:16.0.1")
+
+    // Wake word ("Hey Nova" style): vendored openWakeWord Kotlin port (Apache-2.0) needs these.
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.18.0")
+    implementation("org.apache.commons:commons-math3:3.6.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    implementation("androidx.core:core-ktx:1.13.1")
 }

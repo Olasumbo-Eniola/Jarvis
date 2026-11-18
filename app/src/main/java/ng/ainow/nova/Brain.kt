@@ -66,12 +66,24 @@ class Brain(
         pendingChoice = null
     }
 
+    /** First start: introduce Nova and say what to do next. Spoken once. */
+    fun welcome() {
+        if (prefs.onboarded) return
+        prefs.onboarded = true
+        say("welcome", wakePhrase)
+        if (NovaAccessibilityService.inst == null) say("setup_hint")
+    }
+
+    /** Set by the service so the welcome can name the real wake phrase. */
+    var wakePhrase: String = "Nova"
+
     // ------------------------------------------------------------------ hearing
 
     /** [alts] are the recogniser's alternatives, best first. */
-    fun heard(alts: List<String>) {
+    fun heard(alts: List<String>, addressed: Boolean = false) {
         val now = SystemClock.elapsedRealtime()
-        val cands = alts.map { Nlu.stripWake(it, prefs.wakeName) }
+        // [addressed] = the wake word engine already heard the call, so no name is needed in the sentence.
+        val cands = alts.map { Nlu.stripWake(it, prefs.wakeName) }.map { Pair(it.first || addressed, it.second) }
 
         // Waiting for "yes/no" or "first/second"?
         if (pendingYes != null || pendingChoice != null) {
@@ -114,7 +126,7 @@ class Brain(
             val addressed = had || now < convoUntil || !prefs.requireName
             if (!addressed) continue
             if (rest.isBlank()) {
-                if (had) {
+                if (had && !addressed) {
                     convoUntil = now + FOLLOW_MS
                     say("here")
                     return
@@ -151,7 +163,9 @@ class Brain(
 
     private fun simple(id: String) {
         val svc = NovaAccessibilityService.inst
-        val needsService = id !in setOf("help", "quit", "volume_up", "volume_down", "yes", "no")
+        val needsService = id !in setOf(
+            "help", "quit", "volume_up", "volume_down", "yes", "no", "open_accessibility", "open_app_settings"
+        )
         if (needsService && svc == null) {
             say("noservice")
             return
@@ -180,6 +194,13 @@ class Brain(
                 )
             }
             "help" -> say("help")
+            "open_accessibility" -> launch(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            "open_app_settings" -> launch(
+                Intent(
+                    android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.parse("package:" + ctx.packageName)
+                )
+            )
             "quit" -> {
                 speak(t("bye"))
                 onQuit?.invoke()
@@ -357,32 +378,44 @@ class Brain(
         }
     }
 
-    /** Last resort: ask Gemini to name unlabeled icon buttons from their pictures. */
+    /**
+     * Last resorts, only with consent and never on a screen showing a password:
+     *  1. name the unlabeled icon buttons from their pictures,
+     *  2. otherwise show Gemini the whole screenshot and ask where the control is.
+     */
     private fun iconFallback(target: String, svc: NovaAccessibilityService, scr: Screen, bmp: Bitmap) {
-        val unl = scr.controls.filter { it.unlabeled }.take(10)
-        if (unl.isEmpty() || !prefs.aiAllowed || scr.hasPassword) {
+        if (!prefs.aiAllowed || scr.hasPassword) {
             say("notfound", target)
             end()
             return
         }
+        val unl = scr.controls.filter { it.unlabeled }.take(10)
         val pairs = unl.mapNotNull { item -> crop(bmp, item.rect)?.let { item to it } }
         if (pairs.isEmpty()) {
-            say("notfound", target)
-            end()
+            locateFallback(target, svc, bmp)
             return
         }
         ai.labelIcons(pairs.map { it.second }) { labels ->
-            if (labels == null) {
-                say("ai_error")
-            } else {
-                var best = -1
-                var bestScore = 0.6
+            var best = -1
+            var bestScore = 0.6
+            if (labels != null) {
                 for (i in pairs.indices) {
                     val s = Matcher.score(target, labels.getOrElse(i) { "" })
                     if (s >= bestScore) { best = i; bestScore = s }
                 }
-                if (best >= 0) clickItem(svc, pairs[best].first) else say("notfound", target)
             }
+            if (best >= 0) {
+                clickItem(svc, pairs[best].first)
+                end()
+            } else {
+                locateFallback(target, svc, bmp)
+            }
+        }
+    }
+
+    private fun locateFallback(target: String, svc: NovaAccessibilityService, bmp: Bitmap) {
+        ai.locate(bmp, target) { rect ->
+            if (rect == null) say("notfound", target) else tapPoint(svc, rect, target)
             end()
         }
     }
@@ -535,6 +568,16 @@ class Brain(
                 "chat" -> {
                     val reply = o.optString("reply")
                     if (reply.isBlank()) say("notunderstood") else speak(reply)
+                }
+                "web" -> {
+                    val q = o.optString("query")
+                    if (q.isBlank()) say("notunderstood") else {
+                        begin()
+                        ai.answer(q, pack.name) { r ->
+                            if (r.ok) speak(r.text) else say("ai_error")
+                            end()
+                        }
+                    }
                 }
                 "command" -> {
                     val id = o.optString("id")

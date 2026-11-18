@@ -20,6 +20,8 @@
     "clear_text": ["clear text", "clear field", "clear this"],
     "quit": ["quit", "exit", "stop listening", "goodbye", "switch off", "turn off"],
     "help": ["help", "what can you do", "help me"],
+    "open_accessibility": ["open accessibility settings", "accessibility settings"],
+    "open_app_settings": ["open app settings", "open restricted settings", "restricted settings"],
     "yes": ["yes", "yeah", "yep", "sure", "confirm", "do it", "go ahead"],
     "no": ["no", "nope", "cancel", "stop", "never mind"]
   },
@@ -39,6 +41,8 @@
   "ordinals": ["first|one|1st", "second|two|2nd", "third|three|3rd", "fourth|four|4th", "fifth|five|5th"],
   "say": {
     "here": "Yes?",
+    "welcome": "Hi, I am Nova, your voice assistant. Say %s, wait for the beep, then ask me something. I can read the screen, press buttons, fill forms, open apps, call people and answer questions. Say help any time.",
+    "setup_hint": "First, I need to be switched on in accessibility settings. Say open accessibility settings, find Nova in the list and turn it on. If the switch will not turn on, say open app settings, tap the three dots at the top right and choose allow restricted settings, then try again.",
     "ok": "Okay.",
     "notfound": "I could not find %s.",
     "confirm": "Tap %s? Say yes or no.",
