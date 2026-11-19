@@ -214,7 +214,7 @@ class AiClient(private val prefs: Prefs) {
     /** One short request: is this a command, a question needing the internet, or just chat? Returns JSON text. */
     fun interpret(text: String, languageName: String, buttons: List<String>, cb: (Result) -> Unit) {
         val system = """
-You are Nova, a friendly voice assistant that controls an Android phone for a blind user.
+You are Jarvis, a friendly voice assistant that controls an Android phone for a blind user.
 The user speaks $languageName (they may mix English). Answer ONLY with JSON.
 1. If the user wants the phone to do something, reply {"type":"command","id":"<id>","arg":"<text>"}.
    Allowed ids: tap (arg = the button the user means; prefer a name from the list below), open (arg = app name),
@@ -231,7 +231,7 @@ Buttons visible now: ${buttons.joinToString(" | ")}
 
     /** Answers from the internet using Google Search grounding. Plain text for speaking. */
     fun answer(question: String, languageName: String, cb: (Result) -> Unit) {
-        val system = "You are Nova, a voice assistant. Use Google Search for current facts. Answer in $languageName in at most 60 words, plain text only: no markdown, no lists, no links."
+        val system = "You are Jarvis, a voice assistant. Use Google Search for current facts. Answer in $languageName in at most 60 words, plain text only: no markdown, no lists, no links."
         ask(system, question, search = true, cb = cb)
     }
 

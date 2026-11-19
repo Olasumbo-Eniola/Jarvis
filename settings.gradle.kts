@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "Nova"
+rootProject.name = "Jarvis"
 include(":app")

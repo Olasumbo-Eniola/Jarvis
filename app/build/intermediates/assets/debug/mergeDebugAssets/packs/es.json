@@ -18,7 +18,7 @@
     "volume_up": ["más alto", "sube el volumen"],
     "volume_down": ["más bajo", "baja el volumen"],
     "clear_text": ["borra el texto", "borra esto"],
-    "quit": ["salir", "deja de escuchar", "adiós", "apaga nova"],
+    "quit": ["salir", "deja de escuchar", "adiós", "apaga jarvis"],
     "help": ["ayuda", "ayúdame", "qué puedes hacer"],
     "yes": ["sí", "si", "claro", "adelante", "confirma"],
     "no": ["no", "cancela", "para", "olvídalo"]
@@ -46,7 +46,7 @@
     "tapfail": "Ese toque no funcionó.",
     "disabled": "%s está en gris, no se puede pulsar.",
     "choose": "Encontré %d coincidencias para %s. Di primero, segundo, y así.",
-    "noservice": "Activa Nova en los ajustes de accesibilidad.",
+    "noservice": "Activa Jarvis en los ajustes de accesibilidad.",
     "nocontacts": "Necesito permiso para leer tus contactos.",
     "contact_missing": "No encontré un contacto llamado %s.",
     "app_missing": "No encontré una aplicación llamada %s.",

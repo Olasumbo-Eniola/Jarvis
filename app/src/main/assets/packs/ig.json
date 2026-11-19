@@ -18,7 +18,7 @@
     "volume_up": ["mee ụda elu", "ụda elu"],
     "volume_down": ["mee ụda ala", "ụda ala"],
     "clear_text": ["hichapụ ederede", "hichapụ nke a"],
-    "quit": ["pụọ", "kwụsị ige ntị", "ka ọ dị", "gbanyụọ nova"],
+    "quit": ["pụọ", "kwụsị ige ntị", "ka ọ dị", "gbanyụọ jarvis"],
     "help": ["enyemaka", "nyere m aka", "gịnị ka ị nwere ike ime"],
     "yes": ["ee", "e", "ọ dị mma", "gaa n'ihu"],
     "no": ["mba", "ọ bụghị", "kagbuo", "kwụsị"]
@@ -46,7 +46,7 @@
     "tapfail": "Ọpịa ahụ adịghị arụ ọrụ.",
     "disabled": "%s adịghị arụ ọrụ ugbu a, enweghị ike ịpịa ya.",
     "choose": "Achọtara m %d yiri %s. Sị nke mbụ, nke abụọ, wdg.",
-    "noservice": "Biko gbanye Nova na ntọala accessibility.",
+    "noservice": "Biko gbanye Jarvis na ntọala accessibility.",
     "nocontacts": "Achọrọ m ikike ịgụ kọntaktị gị.",
     "contact_missing": "Achọtaghị m kọntaktị akpọrọ %s.",
     "app_missing": "Achọtaghị m ngwa akpọrọ %s.",

@@ -18,7 +18,7 @@
     "volume_up": ["plus fort", "monte le volume"],
     "volume_down": ["moins fort", "baisse le volume"],
     "clear_text": ["efface le texte", "efface ça"],
-    "quit": ["quitte", "arrête d'écouter", "au revoir", "éteins nova"],
+    "quit": ["quitte", "arrête d'écouter", "au revoir", "éteins jarvis"],
     "help": ["aide", "aide-moi", "que peux-tu faire"],
     "yes": ["oui", "ouais", "d'accord", "vas-y", "confirme"],
     "no": ["non", "annule", "stop", "laisse tomber"]
@@ -46,7 +46,7 @@
     "tapfail": "Ça n'a pas marché.",
     "disabled": "%s est grisé, on ne peut pas appuyer dessus.",
     "choose": "J'ai trouvé %d résultats pour %s. Dis premier, deuxième, et ainsi de suite.",
-    "noservice": "Active Nova dans les paramètres d'accessibilité.",
+    "noservice": "Active Jarvis dans les paramètres d'accessibilité.",
     "nocontacts": "J'ai besoin de l'autorisation de lire tes contacts.",
     "contact_missing": "Je n'ai pas trouvé de contact nommé %s.",
     "app_missing": "Je n'ai pas trouvé d'application nommée %s.",

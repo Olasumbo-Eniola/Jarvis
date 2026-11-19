@@ -18,7 +18,7 @@
     "volume_up": ["ohùn sókè", "gbé ohùn sókè"],
     "volume_down": ["ohùn sísàlẹ̀", "dín ohùn kù"],
     "clear_text": ["pa ọ̀rọ̀ rẹ́", "pa èyí rẹ́"],
-    "quit": ["parí", "jáde", "dúró gbọ́rọ̀", "ó dìgbà", "pa nova"],
+    "quit": ["parí", "jáde", "dúró gbọ́rọ̀", "ó dìgbà", "pa jarvis"],
     "help": ["ìrànlọ́wọ́", "ràn mí lọ́wọ́", "kí lo lè ṣe"],
     "yes": ["bẹ́ẹ̀ ni", "beeni", "bẹ́ẹ̀ ni o", "ṣe é"],
     "no": ["rárá", "bẹ́ẹ̀ kọ́", "fagilé", "dúró"]
@@ -46,7 +46,7 @@
     "tapfail": "Títẹ̀ náà kò ṣiṣẹ́.",
     "disabled": "%s ti di grey, a ò lè tẹ̀ ẹ́.",
     "choose": "Mo rí %d tó jọra fún %s. Sọ àkọ́kọ́, èkejì, àti bẹ́ẹ̀ bẹ́ẹ̀ lọ.",
-    "noservice": "Jọ̀wọ́ tan Nova nínú ètò accessibility.",
+    "noservice": "Jọ̀wọ́ tan Jarvis nínú ètò accessibility.",
     "nocontacts": "Mo nílò àyè láti ka àwọn contact rẹ.",
     "contact_missing": "Mi ò rí contact tí wọ́n ń pè ní %s.",
     "app_missing": "Mi ò rí app tí wọ́n ń pè ní %s.",

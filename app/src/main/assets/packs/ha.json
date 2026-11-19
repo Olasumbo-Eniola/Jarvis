@@ -18,7 +18,7 @@
     "volume_up": ["ƙara sauti", "sauti sama"],
     "volume_down": ["rage sauti", "sauti ƙasa"],
     "clear_text": ["share rubutu", "share wannan"],
-    "quit": ["fita", "daina sauraro", "sai anjima", "kashe nova"],
+    "quit": ["fita", "daina sauraro", "sai anjima", "kashe jarvis"],
     "help": ["taimako", "taimaka min", "me za ka iya yi"],
     "yes": ["eh", "ee", "e", "toh", "ci gaba"],
     "no": ["a'a", "a a", "a'a ba haka ba", "soke", "tsaya"]
@@ -46,7 +46,7 @@
     "tapfail": "Dannawar ba ta yi aiki ba.",
     "disabled": "%s ya yi launin toka, don haka ba za a iya danna shi ba.",
     "choose": "Na sami %d masu kama da %s. Ka ce na farko, na biyu, da sauransu.",
-    "noservice": "Don Allah kunna Nova a saitunan accessibility.",
+    "noservice": "Don Allah kunna Jarvis a saitunan accessibility.",
     "nocontacts": "Ina bukatar izini don karanta lambobinka.",
     "contact_missing": "Ban sami lambar da ake kira %s ba.",
     "app_missing": "Ban sami manhajar da ake kira %s ba.",

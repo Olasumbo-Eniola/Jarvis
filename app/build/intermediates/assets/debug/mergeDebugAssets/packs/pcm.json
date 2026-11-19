@@ -18,7 +18,7 @@
     "volume_up": ["increase sound", "make sound loud", "volume up"],
     "volume_down": ["reduce sound", "make sound small", "volume down"],
     "clear_text": ["clear am", "clear this one", "comot the writing"],
-    "quit": ["off nova", "go rest", "make you rest", "bye bye"],
+    "quit": ["off jarvis", "go rest", "make you rest", "bye bye"],
     "help": ["help me", "abeg help me", "wetin you fit do"],
     "yes": ["yes", "yeah", "oya do am", "do am", "na so", "i dey sure"],
     "no": ["no", "no do am", "leave am", "cancel am", "wait"]
@@ -46,7 +46,7 @@
     "tapfail": "The press no work.",
     "disabled": "%s don grey, you no fit press am.",
     "choose": "I see %d for %s. Talk first, second and so on.",
-    "noservice": "Abeg on Nova for accessibility settings.",
+    "noservice": "Abeg on Jarvis for accessibility settings.",
     "nocontacts": "I need permission to read your contacts.",
     "contact_missing": "I no see contact wey dem call %s.",
     "app_missing": "I no see app wey dem call %s.",

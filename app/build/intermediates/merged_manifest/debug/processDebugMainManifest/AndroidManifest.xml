@@ -43,7 +43,7 @@
         android:appComponentFactory="androidx.core.app.CoreComponentFactory"
         android:debuggable="true"
         android:extractNativeLibs="false"
-        android:label="Nova"
+        android:label="Jarvis"
         android:theme="@android:style/Theme.Material.Light.NoActionBar" >
         <activity
             android:name="ng.ainow.nova.MainActivity"
@@ -62,7 +62,7 @@
         <service
             android:name="ng.ainow.nova.NovaAccessibilityService"
             android:exported="true"
-            android:label="Nova"
+            android:label="Jarvis"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" >
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService" />

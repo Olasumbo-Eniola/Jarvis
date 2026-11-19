@@ -61,12 +61,15 @@ class Brain(
 
     private fun say(key: String, vararg a: Any) = speak(t(key, *a))
 
+    /** For the service: speak one of the pack's phrases. */
+    fun announce(key: String, vararg a: Any) = say(key, *a)
+
     private fun clearPending() {
         pendingYes = null
         pendingChoice = null
     }
 
-    /** First start: introduce Nova and say what to do next. Spoken once. */
+    /** First start: introduce Jarvis and say what to do next. Spoken once. */
     fun welcome() {
         if (prefs.onboarded) return
         prefs.onboarded = true
@@ -75,7 +78,7 @@ class Brain(
     }
 
     /** Set by the service so the welcome can name the real wake phrase. */
-    var wakePhrase: String = "Nova"
+    var wakePhrase: String = "Hey Jarvis"
 
     // ------------------------------------------------------------------ hearing
 
@@ -448,6 +451,12 @@ class Brain(
     // ---- apps, contacts, web ----
 
     private fun openApp(name: String) {
+        // "go to the home screen" arrives as open + "home screen": treat it as the plain command
+        val asCmd = Nlu.parse(name, packs)
+        if (asCmd is Cmd.Simple && asCmd.id != "yes" && asCmd.id != "no") {
+            simple(asCmd.id)
+            return
+        }
         val pm = ctx.packageManager
         val q = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
         val best = pm.queryIntentActivities(q, 0)

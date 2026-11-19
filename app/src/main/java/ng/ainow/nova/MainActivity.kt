@@ -22,7 +22,9 @@ class MainActivity : Activity() {
     private lateinit var status: TextView
     private lateinit var langBtn: Button
     private lateinit var nameField: EditText
+    private var askedOnce = false
     private lateinit var keyField: EditText
+    private lateinit var sensField: EditText
     private lateinit var consent: CheckBox
     private lateinit var confirmAll: CheckBox
     private lateinit var quiet: CheckBox
@@ -55,7 +57,7 @@ class MainActivity : Activity() {
         status = label("")
         col.addView(status)
 
-        col.addView(button("Step 1: turn on Nova in accessibility settings") {
+        col.addView(button("Step 1: turn on Jarvis in accessibility settings") {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         })
         col.addView(button("Step 2: allow microphone, contacts and notifications") {
@@ -73,8 +75,15 @@ class MainActivity : Activity() {
         }
         col.addView(langBtn)
 
-        col.addView(label("Wake phrase is Hey Jarvis until a Nova wake model is added. Say it, wait for the beep, then give your command."))
-        col.addView(label("Name Nova also answers to inside a sentence (used if the wake model cannot start)"))
+        col.addView(label("Wake phrase: Hey Jarvis. Say it clearly, wait for the beep, then give your command. Best in a quiet place, with the phone close to your mouth."))
+        col.addView(label("Wake sensitivity: a number between 0.02 and 0.9. Lower means easier to wake. Try 0.08 if it does not react."))
+        sensField = EditText(this)
+        sensField.setText(prefs.wakeThreshold.toString())
+        sensField.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+        sensField.contentDescription = "Wake sensitivity"
+        col.addView(sensField)
+
+        col.addView(label("Name Jarvis also answers to inside a sentence (used if the wake model cannot start)"))
         nameField = EditText(this)
         nameField.setText(prefs.wakeName)
         nameField.contentDescription = "Name to call the assistant by"
@@ -108,8 +117,10 @@ class MainActivity : Activity() {
         startBtn = button("") {
             save()
             if (VoiceService.running) {
+                prefs.userStopped = true
                 stopService(Intent(this, VoiceService::class.java))
             } else {
+                prefs.userStopped = false
                 startForegroundService(Intent(this, VoiceService::class.java))
             }
             status.postDelayed({ refresh() }, 600)
@@ -123,12 +134,35 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        autoStart()
         refresh()
+    }
+
+    /**
+     * Nobody should have to press Start. Opening the app asks for the microphone once, then
+     * Jarvis starts by itself and speaks the welcome. Only an explicit Stop keeps it off.
+     */
+    private fun autoStart() {
+        if (!has(Manifest.permission.RECORD_AUDIO)) {
+            if (askedOnce) return
+            askedOnce = true
+            val perms = ArrayList<String>()
+            perms.add(Manifest.permission.RECORD_AUDIO)
+            perms.add(Manifest.permission.READ_CONTACTS)
+            if (Build.VERSION.SDK_INT >= 33) perms.add(Manifest.permission.POST_NOTIFICATIONS)
+            requestPermissions(perms.toTypedArray(), 1)
+            return
+        }
+        if (!VoiceService.running && !prefs.userStopped) {
+            startForegroundService(Intent(this, VoiceService::class.java))
+            status.postDelayed({ refresh() }, 800)
+        }
     }
 
     private fun save() {
         prefs.wakeName = nameField.text.toString()
         prefs.aiKey = keyField.text.toString()
+        sensField.text.toString().toFloatOrNull()?.let { prefs.wakeThreshold = it }
         prefs.aiConsent = consent.isChecked
         prefs.confirmAll = confirmAll.isChecked
         prefs.quietEars = quiet.isChecked
@@ -153,15 +187,18 @@ class MainActivity : Activity() {
     private fun refresh() {
         val pack = Packs.load(this, prefs.lang)
         langBtn.text = "Language: " + pack.name + ". Tap to change."
-        startBtn.text = if (VoiceService.running) "Stop Nova" else "Start Nova"
+        startBtn.text = if (VoiceService.running) "Stop Jarvis" else "Start Jarvis"
         status.text = "Accessibility: " + (if (serviceOn()) "on" else "off") +
             ". Microphone: " + (if (has(Manifest.permission.RECORD_AUDIO)) "allowed" else "not allowed") +
             ". Contacts: " + (if (has(Manifest.permission.READ_CONTACTS)) "allowed" else "not allowed") +
-            ". Nova: " + (if (VoiceService.running) "running, " + VoiceService.modeName else "stopped") + "."
+            ". Jarvis: " + (if (VoiceService.running) "running, " + VoiceService.modeName + ". " + VoiceService.lastWake + ". " + VoiceService.debug else "stopped") + "."
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        refresh()
+        if (has(Manifest.permission.RECORD_AUDIO) && !VoiceService.running && !prefs.userStopped) {
+            startForegroundService(Intent(this, VoiceService::class.java))
+        }
+        status.postDelayed({ refresh() }, 800)
     }
 }

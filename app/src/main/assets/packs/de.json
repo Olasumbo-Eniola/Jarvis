@@ -18,7 +18,7 @@
     "volume_up": ["lauter", "lautstärke hoch"],
     "volume_down": ["leiser", "lautstärke runter"],
     "clear_text": ["lösche den text", "lösche das"],
-    "quit": ["beenden", "hör auf zuzuhören", "tschüss", "schalte nova aus"],
+    "quit": ["beenden", "hör auf zuzuhören", "tschüss", "schalte jarvis aus"],
     "help": ["hilfe", "hilf mir", "was kannst du"],
     "yes": ["ja", "jawohl", "klar", "mach das", "bestätige"],
     "no": ["nein", "abbrechen", "stopp", "vergiss es"]
@@ -46,7 +46,7 @@
     "tapfail": "Das Tippen hat nicht funktioniert.",
     "disabled": "%s ist ausgegraut und kann nicht gedrückt werden.",
     "choose": "Ich habe %d Treffer für %s. Sag erste, zweite und so weiter.",
-    "noservice": "Bitte aktiviere Nova in den Bedienungshilfen.",
+    "noservice": "Bitte aktiviere Jarvis in den Bedienungshilfen.",
     "nocontacts": "Ich brauche die Erlaubnis, deine Kontakte zu lesen.",
     "contact_missing": "Ich habe keinen Kontakt namens %s gefunden.",
     "app_missing": "Ich habe keine App namens %s gefunden.",

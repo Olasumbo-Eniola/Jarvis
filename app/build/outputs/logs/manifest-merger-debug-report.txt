@@ -1,9 +1,9 @@
 -- Merging decision tree log ---
 manifest
-ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:2:1-57:12
-INJECTED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:2:1-57:12
-INJECTED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:2:1-57:12
-INJECTED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:2:1-57:12
+ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:2:1-57:12
+INJECTED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:2:1-57:12
+INJECTED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:2:1-57:12
+INJECTED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:2:1-57:12
 MERGED from [com.google.mlkit:text-recognition:16.0.1] C:\Users\HP\.gradle\caches\8.9\transforms\a246f5103cec2eb73915d5fe24399666\transformed\text-recognition-16.0.1\AndroidManifest.xml:2:1-7:12
 MERGED from [com.google.android.gms:play-services-mlkit-text-recognition:19.0.1] C:\Users\HP\.gradle\caches\8.9\transforms\17526de29b4f8339af69014c615a4ccf\transformed\play-services-mlkit-text-recognition-19.0.1\AndroidManifest.xml:2:1-8:12
 MERGED from [com.google.mlkit:text-recognition-bundled-common:17.0.0] C:\Users\HP\.gradle\caches\8.9\transforms\df66d20bb9295cc4a81dd1aa2c6fe172\transformed\text-recognition-bundled-common-17.0.0\AndroidManifest.xml:2:1-7:12
@@ -52,70 +52,70 @@ MERGED from [androidx.tracing:tracing:1.0.0] C:\Users\HP\.gradle\caches\8.9\tran
 MERGED from [com.microsoft.onnxruntime:onnxruntime-android:1.18.0] C:\Users\HP\.gradle\caches\8.9\transforms\ab2b8b74ac2ac9971f39e6dc70773253\transformed\onnxruntime-android-1.18.0\AndroidManifest.xml:2:1-7:12
 MERGED from [com.google.android.odml:image:1.0.0-beta1] C:\Users\HP\.gradle\caches\8.9\transforms\db2f9e06f583262d0f3059028f6a255b\transformed\image-1.0.0-beta1\AndroidManifest.xml:2:1-9:12
 	package
-		INJECTED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml
+		INJECTED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml
 	android:versionName
-		INJECTED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml
+		INJECTED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml
 	android:versionCode
-		INJECTED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml
+		INJECTED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml
 	xmlns:android
-		ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:2:11-69
+		ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:2:11-69
 uses-permission#android.permission.RECORD_AUDIO
-ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:4:5-71
+ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:4:5-71
 	android:name
-		ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:4:22-68
+		ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:4:22-68
 uses-permission#android.permission.INTERNET
-ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:5:5-67
+ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:5:5-67
 MERGED from [com.google.android.datatransport:transport-backend-cct:2.3.3] C:\Users\HP\.gradle\caches\8.9\transforms\1eaee9326ac1d80656c62c4a921caa6a\transformed\transport-backend-cct-2.3.3\AndroidManifest.xml:26:5-67
 MERGED from [com.google.android.datatransport:transport-backend-cct:2.3.3] C:\Users\HP\.gradle\caches\8.9\transforms\1eaee9326ac1d80656c62c4a921caa6a\transformed\transport-backend-cct-2.3.3\AndroidManifest.xml:26:5-67
 	android:name
-		ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:5:22-64
+		ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:5:22-64
 uses-permission#android.permission.READ_CONTACTS
-ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:6:5-72
+ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:6:5-72
 	android:name
-		ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:6:22-69
+		ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:6:22-69
 uses-permission#android.permission.FOREGROUND_SERVICE
-ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:7:5-77
+ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:7:5-77
 	android:name
-		ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:7:22-74
+		ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:7:22-74
 uses-permission#android.permission.FOREGROUND_SERVICE_MICROPHONE
-ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:8:5-88
+ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:8:5-88
 	android:name
-		ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:8:22-85
+		ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:8:22-85
 uses-permission#android.permission.POST_NOTIFICATIONS
-ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:9:5-77
+ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:9:5-77
 	android:name
-		ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:9:22-74
+		ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:9:22-74
 uses-permission#android.permission.MODIFY_AUDIO_SETTINGS
-ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:10:5-80
+ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:10:5-80
 	android:name
-		ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:10:22-77
+		ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:10:22-77
 queries
-ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:12:5-23:15
+ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:12:5-23:15
 intent#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
-ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:13:9-16:18
+ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:13:9-16:18
 action#android.intent.action.MAIN
-ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:14:13-65
+ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:14:13-65
 	android:name
-		ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:14:21-62
+		ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:14:21-62
 category#android.intent.category.LAUNCHER
-ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:15:13-73
+ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:15:13-73
 	android:name
-		ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:15:23-70
+		ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:15:23-70
 intent#action:name:android.speech.RecognitionService
-ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:17:9-19:18
+ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:17:9-19:18
 action#android.speech.RecognitionService
-ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:18:13-72
+ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:18:13-72
 	android:name
-		ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:18:21-69
+		ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:18:21-69
 intent#action:name:android.intent.action.TTS_SERVICE
-ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:20:9-22:18
+ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:20:9-22:18
 action#android.intent.action.TTS_SERVICE
-ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:21:13-72
+ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:21:13-72
 	android:name
-		ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:21:21-69
+		ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:21:21-69
 application
-ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:25:5-56:19
-INJECTED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:25:5-56:19
+ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:25:5-56:19
+INJECTED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:25:5-56:19
 MERGED from [com.google.android.gms:play-services-mlkit-text-recognition-common:19.1.0] C:\Users\HP\.gradle\caches\8.9\transforms\155d4ad46d5240542b5dd68bad2ba5b0\transformed\play-services-mlkit-text-recognition-common-19.1.0\AndroidManifest.xml:8:5-16:19
 MERGED from [com.google.android.gms:play-services-mlkit-text-recognition-common:19.1.0] C:\Users\HP\.gradle\caches\8.9\transforms\155d4ad46d5240542b5dd68bad2ba5b0\transformed\play-services-mlkit-text-recognition-common-19.1.0\AndroidManifest.xml:8:5-16:19
 MERGED from [com.google.mlkit:vision-common:17.3.0] C:\Users\HP\.gradle\caches\8.9\transforms\ca36a05d6a49ed0c2be0f7dd182492a0\transformed\vision-common-17.3.0\AndroidManifest.xml:8:5-16:19
@@ -147,57 +147,57 @@ MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\HP\.gradle\caches\
 MERGED from [com.google.android.odml:image:1.0.0-beta1] C:\Users\HP\.gradle\caches\8.9\transforms\db2f9e06f583262d0f3059028f6a255b\transformed\image-1.0.0-beta1\AndroidManifest.xml:7:5-20
 MERGED from [com.google.android.odml:image:1.0.0-beta1] C:\Users\HP\.gradle\caches\8.9\transforms\db2f9e06f583262d0f3059028f6a255b\transformed\image-1.0.0-beta1\AndroidManifest.xml:7:5-20
 	android:extractNativeLibs
-		INJECTED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml
+		INJECTED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml
 	android:appComponentFactory
 		ADDED from [androidx.core:core:1.13.1] C:\Users\HP\.gradle\caches\8.9\transforms\c7d9af68416eeecf8a4a6ac0b77be855\transformed\core-1.13.1\AndroidManifest.xml:28:18-86
 	android:label
-		ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:27:9-29
+		ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:27:9-31
 	android:allowBackup
-		ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:26:9-36
+		ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:26:9-36
 	android:theme
-		ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:28:9-72
+		ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:28:9-72
 activity#ng.ainow.nova.MainActivity
-ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:30:9-37:20
+ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:30:9-37:20
 	android:exported
-		ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:32:13-36
+		ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:32:13-36
 	android:name
-		ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:31:13-41
+		ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:31:13-41
 intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
-ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:33:13-36:29
+ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:33:13-36:29
 service#ng.ainow.nova.VoiceService
-ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:39:9-42:58
+ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:39:9-42:58
 	android:exported
-		ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:41:13-37
+		ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:41:13-37
 	android:foregroundServiceType
-		ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:42:13-55
+		ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:42:13-55
 	android:name
-		ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:40:13-41
+		ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:40:13-41
 service#ng.ainow.nova.NovaAccessibilityService
-ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:44:9-55:19
+ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:44:9-55:19
 	android:label
-		ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:47:13-33
+		ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:47:13-35
 	android:exported
-		ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:46:13-36
+		ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:46:13-36
 	android:permission
-		ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:48:13-79
+		ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:48:13-79
 	android:name
-		ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:45:13-53
+		ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:45:13-53
 intent-filter#action:name:android.accessibilityservice.AccessibilityService
-ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:49:13-51:29
+ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:49:13-51:29
 action#android.accessibilityservice.AccessibilityService
-ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:50:17-92
+ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:50:17-92
 	android:name
-		ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:50:25-89
+		ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:50:25-89
 meta-data#android.accessibilityservice
-ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:52:13-54:72
+ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:52:13-54:72
 	android:resource
-		ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:54:17-69
+		ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:54:17-69
 	android:name
-		ADDED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml:53:17-60
+		ADDED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml:53:17-60
 uses-sdk
-INJECTED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml reason: use-sdk injection requested
-INJECTED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml
-INJECTED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml
+INJECTED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml
+INJECTED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml
 MERGED from [com.google.mlkit:text-recognition:16.0.1] C:\Users\HP\.gradle\caches\8.9\transforms\a246f5103cec2eb73915d5fe24399666\transformed\text-recognition-16.0.1\AndroidManifest.xml:5:5-44
 MERGED from [com.google.mlkit:text-recognition:16.0.1] C:\Users\HP\.gradle\caches\8.9\transforms\a246f5103cec2eb73915d5fe24399666\transformed\text-recognition-16.0.1\AndroidManifest.xml:5:5-44
 MERGED from [com.google.android.gms:play-services-mlkit-text-recognition:19.0.1] C:\Users\HP\.gradle\caches\8.9\transforms\17526de29b4f8339af69014c615a4ccf\transformed\play-services-mlkit-text-recognition-19.0.1\AndroidManifest.xml:6:5-44
@@ -293,9 +293,9 @@ MERGED from [com.microsoft.onnxruntime:onnxruntime-android:1.18.0] C:\Users\HP\.
 MERGED from [com.google.android.odml:image:1.0.0-beta1] C:\Users\HP\.gradle\caches\8.9\transforms\db2f9e06f583262d0f3059028f6a255b\transformed\image-1.0.0-beta1\AndroidManifest.xml:5:5-44
 MERGED from [com.google.android.odml:image:1.0.0-beta1] C:\Users\HP\.gradle\caches\8.9\transforms\db2f9e06f583262d0f3059028f6a255b\transformed\image-1.0.0-beta1\AndroidManifest.xml:5:5-44
 	android:targetSdkVersion
-		INJECTED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml
+		INJECTED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml
 	android:minSdkVersion
-		INJECTED from C:\Users\HP\Documents\nova\app\src\main\AndroidManifest.xml
+		INJECTED from C:\Users\HP\Documents\Jarvis\app\src\main\AndroidManifest.xml
 service#com.google.mlkit.common.internal.MlKitComponentDiscoveryService
 ADDED from [com.google.android.gms:play-services-mlkit-text-recognition-common:19.1.0] C:\Users\HP\.gradle\caches\8.9\transforms\155d4ad46d5240542b5dd68bad2ba5b0\transformed\play-services-mlkit-text-recognition-common-19.1.0\AndroidManifest.xml:9:9-15:19
 MERGED from [com.google.mlkit:vision-common:17.3.0] C:\Users\HP\.gradle\caches\8.9\transforms\ca36a05d6a49ed0c2be0f7dd182492a0\transformed\vision-common-17.3.0\AndroidManifest.xml:9:9-15:19

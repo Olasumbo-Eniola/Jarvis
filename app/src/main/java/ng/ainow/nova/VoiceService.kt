@@ -42,6 +42,10 @@ class VoiceService : Service() {
         var running = false
         @Volatile
         var modeName = "starting"
+        @Volatile
+        var lastWake = "No wake word heard yet"
+        @Volatile
+        var debug = "Recogniser: nothing yet"
     }
 
     private enum class Mode { WAKE, SESSION, LOOP }
@@ -102,18 +106,19 @@ class VoiceService : Service() {
             return
         }
         try {
-            // Put your own trained model in app/src/main/assets/nova.onnx to wake on "Nova".
-            val hasNova = assets.list("")?.contains("nova.onnx") == true
-            val model = if (hasNova) WakeWordModel("Nova", "nova.onnx", 0.5f)
-            else WakeWordModel("Hey Jarvis", "hey_jarvis_v0.1.onnx", 0.5f)
-            brain.wakePhrase = if (hasNova) "Hey Nova" else "Hey Jarvis"
+            val th = prefs.wakeThreshold
+            val model = WakeWordModel("Hey Jarvis", "hey_jarvis_v0.1.onnx", th)
+            brain.wakePhrase = "Hey Jarvis"
 
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
             val engine = WakeWordEngine(this, listOf(model), DetectionMode.SINGLE_BEST, 2000L, CoroutineScope(Dispatchers.Default))
             wakeScope = scope
             wake = engine
             wakeJob = scope.launch {
-                engine.detections.collect { onWakeHeard() }
+                engine.detections.collect { d ->
+                    lastWake = "Last wake: score " + String.format("%.2f", d.score) + " (threshold " + String.format("%.2f", th) + ")"
+                    onWakeHeard()
+                }
             }
             engine.start()
             mode = Mode.WAKE
@@ -147,10 +152,10 @@ class VoiceService : Service() {
         if (mode != Mode.WAKE) return
         mode = Mode.SESSION
         silentTurns = 0
-        try { wake?.stop() } catch (e: Throwable) {}
+        // Fully release the wake word's microphone: two recorders at once can leave the recogniser deaf.
+        stopWake(release = true)
         beep(true)
-        // give the microphone a moment to be released before the recogniser takes it
-        main.postDelayed({ if (mode == Mode.SESSION) listen() }, 350)
+        main.postDelayed({ if (mode == Mode.SESSION) listen() }, 700)
     }
 
     private fun endSession() {
@@ -159,11 +164,7 @@ class VoiceService : Service() {
         listening = false
         beep(false)
         mode = Mode.WAKE
-        main.postDelayed({
-            if (mode == Mode.WAKE) {
-                try { wake?.start() } catch (e: Throwable) { enterLoop("The wake word stopped working.") }
-            }
-        }, 400)
+        main.postDelayed({ if (mode == Mode.WAKE && running) startWake() }, 600)
     }
 
     private fun beep(start: Boolean) {
@@ -176,9 +177,9 @@ class VoiceService : Service() {
 
     private fun startInForeground() {
         val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        nm.createNotificationChannel(NotificationChannel("nova", "Nova", NotificationManager.IMPORTANCE_LOW))
+        nm.createNotificationChannel(NotificationChannel("nova", "Jarvis", NotificationManager.IMPORTANCE_LOW))
         val n = Notification.Builder(this, "nova")
-            .setContentTitle("Nova is listening")
+            .setContentTitle("Jarvis is listening")
             .setContentText("Waiting for the wake phrase")
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .setOngoing(true)
@@ -224,13 +225,12 @@ class VoiceService : Service() {
         if (rec == null) {
             rec = SpeechRecognizer.createSpeechRecognizer(this).also { it.setRecognitionListener(listener) }
         }
-        val tag = if (sttFallback) "en-NG" else brain.pack.stt
+        val tag = if (sttFallback) "en-US" else brain.pack.stt
         val i = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
         i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
         i.putExtra(RecognizerIntent.EXTRA_LANGUAGE, tag)
         i.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
         i.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
-        i.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
         i.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
         listening = true
         try {
@@ -252,21 +252,34 @@ class VoiceService : Service() {
     }
 
     private fun languageMissing() {
-        if (!sttFallback && brain.pack.stt != "en-NG") {
+        if (!sttFallback) {
             sttFallback = true
-            speaker.speak(
-                "Your phone cannot listen in " + brain.pack.name + " yet. I will listen in English.",
-                "en-NG"
-            )
+            if (brain.pack.stt != "en-NG") {
+                speaker.speak(
+                    "Your phone cannot listen in " + brain.pack.name + " yet. I will listen in English.",
+                    "en-NG"
+                )
+            }
+            retryIn(300)
+        } else if (mode == Mode.SESSION) {
+            debug = "Recogniser says the language is unavailable even in plain English"
+            endSession()
+        } else {
+            retryIn(5000)
         }
-        retryIn(300)
     }
 
     /** Nothing was said or nothing understood. In a session that means "I'm done". */
     private fun quietTurn() {
         if (mode == Mode.SESSION) {
             silentTurns++
-            if (silentTurns >= 1) endSession() else retryIn(150)
+            when (silentTurns) {
+                1 -> brain.announce("prompt")                       // "I am listening. What would you like?"
+                else -> {
+                    brain.announce("idle_bye", brain.wakePhrase)
+                    main.postDelayed({ endSession() }, 300)
+                }
+            }
         } else {
             retryIn(150)
         }
@@ -283,6 +296,7 @@ class VoiceService : Service() {
 
         override fun onError(error: Int) {
             listening = false
+            debug = "Recogniser error $error (mode $mode)"
             when (error) {
                 9 -> stopSelf()                                  // permissions missing
                 12, 13 -> languageMissing()                      // language not supported / available
@@ -300,6 +314,7 @@ class VoiceService : Service() {
                 return
             }
             silentTurns = 0
+            debug = "Heard: " + list[0]
             brain.heard(list, addressed = mode == Mode.SESSION)
             maybeListen()
         }

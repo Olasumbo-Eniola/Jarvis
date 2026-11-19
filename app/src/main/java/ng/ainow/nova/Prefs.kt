@@ -11,8 +11,8 @@ class Prefs(ctx: Context) {
         set(v) { sp.edit().putString("lang", v).apply() }
 
     var wakeName: String
-        get() = sp.getString("wakeName", "Nova") ?: "Nova"
-        set(v) { sp.edit().putString("wakeName", v.trim().ifEmpty { "Nova" }).apply() }
+        get() = sp.getString("wakeName", "Jarvis") ?: "Jarvis"
+        set(v) { sp.edit().putString("wakeName", v.trim().ifEmpty { "Jarvis" }).apply() }
 
     var aiKey: String
         get() = sp.getString("aiKey", "") ?: ""
@@ -34,6 +34,16 @@ class Prefs(ctx: Context) {
     var quietEars: Boolean
         get() = sp.getBoolean("quietEars", true)
         set(v) { sp.edit().putBoolean("quietEars", v).apply() }
+
+    /** Wake word threshold. Lower = easier to trigger (more false alarms). */
+    var wakeThreshold: Float
+        get() = sp.getFloat("wakeThreshold", 0.15f)
+        set(v) { sp.edit().putFloat("wakeThreshold", v.coerceIn(0.02f, 0.9f)).apply() }
+
+    /** True only if the user pressed Stop. Otherwise Jarvis starts by itself whenever the app opens. */
+    var userStopped: Boolean
+        get() = sp.getBoolean("userStopped", false)
+        set(v) { sp.edit().putBoolean("userStopped", v).apply() }
 
     var onboarded: Boolean
         get() = sp.getBoolean("onboarded", false)
