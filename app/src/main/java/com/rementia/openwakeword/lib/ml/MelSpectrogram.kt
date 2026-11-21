@@ -19,6 +19,10 @@ internal class MelSpectrogram(
     }
     
     private val env: OrtEnvironment = OrtEnvironment.getEnvironment()
+
+    // Loaded once. Re-reading and re-creating the session on every 80 ms chunk made the
+    // pipeline fall behind real time, so the microphone buffer overflowed and audio was lost.
+    private val session: OrtSession = assetManager.open(MEL_SPECTROGRAM_MODEL).use { env.createSession(it.readBytes()) }
     
     /**
      * Compute mel-spectrogram from audio samples.
@@ -27,15 +31,9 @@ internal class MelSpectrogram(
      * @return 2D array representing mel-spectrogram
      */
     fun computeMelSpectrogram(audioSamples: FloatArray): Array<FloatArray> {
-        var session: OrtSession? = null
         var inputTensor: OnnxTensor? = null
         
         return try {
-            assetManager.open(MEL_SPECTROGRAM_MODEL).use { inputStream ->
-                val modelBytes = inputStream.readBytes()
-                session = env.createSession(modelBytes)
-            }
-            
             val floatBuffer = FloatBuffer.wrap(audioSamples)
             inputTensor = OnnxTensor.createTensor(
                 env, 
@@ -43,7 +41,7 @@ internal class MelSpectrogram(
                 longArrayOf(BATCH_SIZE.toLong(), audioSamples.size.toLong())
             )
             
-            session!!.run(mapOf(session!!.inputNames.first() to inputTensor)).use { results ->
+            session.run(mapOf(session.inputNames.first() to inputTensor)).use { results ->
                 val outputTensor = results[0].value as Array<Array<Array<FloatArray>>>
                 
                 // Squeeze dimensions and apply transform
@@ -54,7 +52,6 @@ internal class MelSpectrogram(
             throw RuntimeException("Failed to compute mel-spectrogram", e)
         } finally {
             inputTensor?.close()
-            session?.close()
         }
     }
     
@@ -76,6 +73,6 @@ internal class MelSpectrogram(
     }
     
     override fun close() {
-        // env is managed globally by OrtEnvironment
+        session.close() // env is managed globally by OrtEnvironment
     }
 }

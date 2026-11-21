@@ -17,6 +17,10 @@ internal class EmbeddingModel(
     }
     
     private val env: OrtEnvironment = OrtEnvironment.getEnvironment()
+
+    // Loaded once. Re-reading and re-creating the session on every 80 ms chunk made the
+    // pipeline fall behind real time, so the microphone buffer overflowed and audio was lost.
+    private val session: OrtSession = assetManager.open(EMBEDDING_MODEL).use { env.createSession(it.readBytes()) }
     
     /**
      * Generate embeddings from mel-spectrogram windows.
@@ -25,18 +29,12 @@ internal class EmbeddingModel(
      * @return 2D array of embeddings
      */
     fun generateEmbeddings(input: Array<Array<Array<FloatArray>>>): Array<FloatArray> {
-        var session: OrtSession? = null
         var inputTensor: OnnxTensor? = null
         
         return try {
-            assetManager.open(EMBEDDING_MODEL).use { inputStream ->
-                val modelBytes = inputStream.readBytes()
-                session = env.createSession(modelBytes)
-            }
-            
             inputTensor = OnnxTensor.createTensor(env, input)
             
-            session!!.run(mapOf("input_1" to inputTensor)).use { results ->
+            session.run(mapOf("input_1" to inputTensor)).use { results ->
                 val rawOutput = results[0].value as Array<Array<Array<FloatArray>>>
                 
                 // Reshape from (41, 1, 1, 96) to (41, 96)
@@ -48,11 +46,10 @@ internal class EmbeddingModel(
             throw RuntimeException("Failed to generate embeddings", e)
         } finally {
             inputTensor?.close()
-            session?.close()
         }
     }
     
     override fun close() {
-        // env is managed globally by OrtEnvironment
+        session.close() // env is managed globally by OrtEnvironment
     }
 }

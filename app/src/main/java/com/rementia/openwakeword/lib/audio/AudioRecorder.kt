@@ -73,9 +73,11 @@ internal class AudioRecorder(
                 val readCount = audioRecord.read(audioBuffer, 0, audioBuffer.size)
                 
                 if (readCount > 0) {
-                    // Convert short array to float array (normalize to -1.0 to 1.0)
+                    // Keep raw int16 scale (-32768..32767). openWakeWord's melspectrogram model and
+                    // its "/10 + 2" transform are calibrated for int16 values; normalising to -1..1
+                    // makes every frame look like near-silence, so the wake word never scores.
                     val floatBuffer = FloatArray(readCount) { i ->
-                        audioBuffer[i] / 32768.0f
+                        audioBuffer[i].toFloat()
                     }
                     emit(floatBuffer)
                 }
