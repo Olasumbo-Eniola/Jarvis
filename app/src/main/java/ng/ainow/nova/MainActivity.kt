@@ -57,16 +57,8 @@ class MainActivity : Activity() {
         status = label("")
         col.addView(status)
 
-        col.addView(button("Step 1: turn on Jarvis in accessibility settings") {
-            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-        })
-        col.addView(button("Step 2: allow microphone, contacts and notifications") {
-            val perms = ArrayList<String>()
-            perms.add(Manifest.permission.RECORD_AUDIO)
-            perms.add(Manifest.permission.READ_CONTACTS)
-            if (Build.VERSION.SDK_INT >= 33) perms.add(Manifest.permission.POST_NOTIFICATIONS)
-            requestPermissions(perms.toTypedArray(), 1)
-        })
+        col.addView(button("Step 1: turn on Jarvis in accessibility settings") { openAccessibility() })
+        col.addView(button("Step 2: allow microphone, contacts and notifications") { askPermissions() })
 
         langBtn = button("") {
             val cur = codes.indexOf(prefs.lang).coerceAtLeast(0)
@@ -101,8 +93,9 @@ class MainActivity : Activity() {
         consent.isChecked = prefs.aiConsent
         col.addView(consent)
 
+        col.addView(label("Safety: Jarvis always asks \"are you sure?\" before pressing a button that sends, posts, submits, pays, buys or deletes something, like sending a message or submitting a form. Opening apps and moving around never asks."))
         confirmAll = CheckBox(this)
-        confirmAll.text = "Ask \"are you sure?\" before every tap"
+        confirmAll.text = "Ask before every tap, even simple ones like opening a chat or a menu"
         confirmAll.isChecked = prefs.confirmAll
         col.addView(confirmAll)
 
@@ -146,16 +139,82 @@ class MainActivity : Activity() {
         if (!has(Manifest.permission.RECORD_AUDIO)) {
             if (askedOnce) return
             askedOnce = true
-            val perms = ArrayList<String>()
-            perms.add(Manifest.permission.RECORD_AUDIO)
-            perms.add(Manifest.permission.READ_CONTACTS)
-            if (Build.VERSION.SDK_INT >= 33) perms.add(Manifest.permission.POST_NOTIFICATIONS)
-            requestPermissions(perms.toTypedArray(), 1)
+            askPermissions()
             return
         }
         if (!VoiceService.running && !prefs.userStopped) {
             startForegroundService(Intent(this, VoiceService::class.java))
             status.postDelayed({ refresh() }, 800)
+        }
+    }
+
+    private fun wantedPerms(): List<String> {
+        val perms = ArrayList<String>()
+        perms.add(Manifest.permission.RECORD_AUDIO)
+        perms.add(Manifest.permission.READ_CONTACTS)
+        if (Build.VERSION.SDK_INT >= 33) perms.add(Manifest.permission.POST_NOTIFICATIONS)
+        return perms
+    }
+
+    /** Tells the user (and the screen reader) what just happened. */
+    private fun announce(msg: String) {
+        status.text = msg
+        status.announceForAccessibility(msg)
+    }
+
+    /**
+     * Opens the accessibility list. Some phones (Tecno, Infinix, Xiaomi and others) do not
+     * handle the standard screen or block it, so fall back to the main Settings app instead of
+     * silently doing nothing.
+     */
+    private fun openAccessibility() {
+        val tries = listOf(
+            Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS),
+            Intent(Settings.ACTION_SETTINGS),
+        )
+        for (i in tries) {
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_HISTORY)
+            try {
+                startActivity(i)
+                if (i.action == Settings.ACTION_SETTINGS) {
+                    announce("Opened Settings. Go to Accessibility, then Installed apps or Downloaded services, then Jarvis.")
+                }
+                return
+            } catch (e: Exception) {
+                // try the next one
+            }
+        }
+        announce("Could not open Settings. Open the Settings app yourself, then Accessibility, then Jarvis.")
+    }
+
+    /**
+     * Asks only for what is still missing. Android silently ignores the request once the user
+     * has said "Don't allow" twice, so in that case open Jarvis's App info page instead.
+     */
+    private fun askPermissions() {
+        val missing = wantedPerms().filter { !has(it) }
+        if (missing.isEmpty()) {
+            announce("Microphone, contacts and notifications are already allowed.")
+            return
+        }
+        val sp = getSharedPreferences("nova", MODE_PRIVATE)
+        val blocked = missing.any { sp.getBoolean("asked_$it", false) && !shouldShowRequestPermissionRationale(it) }
+        if (blocked) {
+            openAppInfo()
+            return
+        }
+        sp.edit().apply { missing.forEach { putBoolean("asked_$it", true) } }.apply()
+        requestPermissions(missing.toTypedArray(), 1)
+    }
+
+    private fun openAppInfo() {
+        val i = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.fromParts("package", packageName, null))
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        try {
+            startActivity(i)
+            announce("Android will not ask again. In App info, open Permissions and allow Microphone, Contacts and Notifications.")
+        } catch (e: Exception) {
+            announce("Open Settings, then Apps, then Jarvis, then Permissions, and allow Microphone, Contacts and Notifications.")
         }
     }
 
