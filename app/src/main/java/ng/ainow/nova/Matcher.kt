@@ -2,10 +2,20 @@ package ng.ainow.nova
 
 import java.text.Normalizer
 
-/** Text normalising and fuzzy matching. No AI, works offline, works for any Latin-script language. */
+/**
+ * Text normalising and fuzzy matching. No AI, works offline. Handles Latin-script languages, scripts
+ * with vowel signs (Hindi, Thai) and scripts written without spaces (Chinese, Japanese, Thai).
+ */
 object Matcher {
-    private val MARKS = Regex("\\p{Mn}+")
-    private val JUNK = Regex("[^\\p{L}\\p{N} ]")
+    // Accents on Latin letters only (é -> e, ọ -> o). Other scripts' marks are part of the letter:
+    // Hindi "्" joins letters, Russian "й" is not "и", Thai tone marks change the word.
+    private val MARKS = Regex("(?<=\\p{IsLatin})\\p{Mn}+")
+    // Keep letters, digits and spacing vowel signs (Hindi "ो" is a mark, not punctuation).
+    private val JUNK = Regex("[^\\p{L}\\p{N}\\p{M} ]")
+    private val SPACELESS = Regex("[\\p{IsHan}\\p{IsHiragana}\\p{IsKatakana}\\p{IsThai}]")
+
+    /** Chinese, Japanese and Thai don't put spaces between words, so word-by-word matching can't work. */
+    fun spaceless(s: String): Boolean = SPACELESS.containsMatchIn(s)
     private val SPACES = Regex("\\s+")
 
     /** Lowercase, remove accents and tone marks, drop punctuation. "Ṣí" -> "si", "Écran" -> "ecran". */
@@ -14,7 +24,8 @@ object Matcher {
         t = t.replace('ɓ', 'b').replace('ɗ', 'd').replace('ƙ', 'k').replace('ƴ', 'y').replace("ß", "ss")
         t = Normalizer.normalize(t, Normalizer.Form.NFD).replace(MARKS, "")
         t = t.replace(JUNK, " ").replace(SPACES, " ").trim()
-        return t
+        // Recombine what NFD split apart but isn't an accent (Korean syllables, some Indic letters).
+        return Normalizer.normalize(t, Normalizer.Form.NFC)
     }
 
     fun words(s: String): List<String> {
@@ -61,6 +72,17 @@ object Matcher {
 
     /** 0.0 = no match, 1.0 = same words. Speech recognisers misspell, so this is forgiving. */
     fun score(target: String, label: String): Double {
+        if (spaceless(target) || spaceless(label)) {
+            val a = norm(target).replace(" ", "")
+            val b = norm(label).replace(" ", "")
+            return when {
+                a.isEmpty() || b.isEmpty() -> 0.0
+                a == b -> 1.0
+                b.contains(a) -> 0.9
+                b.length >= 2 && a.contains(b) -> 0.8
+                else -> 0.0
+            }
+        }
         val tt = words(target)
         val lt = words(label)
         if (tt.isEmpty() || lt.isEmpty()) return 0.0

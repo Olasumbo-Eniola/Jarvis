@@ -229,6 +229,38 @@ Buttons visible now: ${buttons.joinToString(" | ")}
         ask(system, text, json = true, cb = cb)
     }
 
+    /**
+     * Puts back the tone marks and under-dots that people leave out when typing Yorùbá, Igbo or Hausa
+     * ("E kaaro, se daadaa ni?" -> "Ẹ káàrọ̀, ṣé dáadáa ni?"), using the context to pick the right word.
+     * Blocking; returns null if Gemini is off, slow (over [timeoutMs]) or fails, so callers keep the
+     * original text. One result per input, same order.
+     */
+    fun restoreTonesSync(sentences: List<String>, langs: List<String>, timeoutMs: Long): List<String>? {
+        if (sentences.isEmpty()) return emptyList()
+        val names = mapOf("yo" to "Yorùbá", "ig" to "Igbo", "ha" to "Hausa")
+        val items = JSONArray()
+        for (i in sentences.indices) items.put(JSONObject().put("lang", names[langs[i]] ?: langs[i]).put("text", sentences[i]))
+        val system = """
+You restore diacritics in Nigerian-language text that was typed without them.
+For each item, rewrite "text" in its language with the correct tone marks and under-dots
+(Yorùbá: à á è é ẹ ì í ò ó ọ ù ú ṣ ń; Igbo: ị ọ ụ ṅ and tones; Hausa: ƙ ɗ ɓ ƴ).
+Use the surrounding items as context to choose the right words. Do NOT translate, add, remove or
+reorder words. Leave English words, names and numbers unchanged, including the English words
+Nigerians mix into their languages (ok, okay, please, sorry, thank you, bye, phone, money...):
+"Ok o" stays "Ok o". If you are unsure, return the text unchanged.
+Answer ONLY with a JSON array of strings, one per item, in the same order.
+""".trimIndent()
+        val job = ex.submit<Result> { askSync(system, items.toString(), emptyList(), json = true, search = false) }
+        val r = try { job.get(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS) } catch (e: Exception) { job.cancel(true); return null }
+        if (!r.ok) return null
+        return try {
+            val a = JSONArray(clean(r.text))
+            if (a.length() != sentences.size) null else List(a.length()) { a.getString(it) }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     /** Answers from the internet using Google Search grounding. Plain text for speaking. */
     fun answer(question: String, languageName: String, cb: (Result) -> Unit) {
         val system = "You are Jarvis, a voice assistant. Use Google Search for current facts. Answer in $languageName in at most 60 words, plain text only: no markdown, no lists, no links."

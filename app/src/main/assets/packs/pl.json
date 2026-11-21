@@ -1,0 +1,237 @@
+{
+  "code": "pl",
+  "name": "Polski",
+  "aliases": [
+    "polski",
+    "polish",
+    "po polsku"
+  ],
+  "stt": "pl-PL",
+  "tts": "pl-PL",
+  "phrases": {
+    "back": [
+      "wstecz",
+      "cofnij",
+      "wróć",
+      "poprzedni ekran"
+    ],
+    "home": [
+      "ekran główny",
+      "idź do ekranu głównego",
+      "wróć do ekranu głównego",
+      "strona główna",
+      "home"
+    ],
+    "recents": [
+      "ostatnie aplikacje",
+      "ostatnie",
+      "pokaż ostatnie aplikacje"
+    ],
+    "notifications": [
+      "powiadomienia",
+      "pokaż powiadomienia",
+      "otwórz powiadomienia",
+      "przeczytaj powiadomienia"
+    ],
+    "quick_settings": [
+      "szybkie ustawienia",
+      "otwórz szybkie ustawienia"
+    ],
+    "read_screen": [
+      "przeczytaj ekran",
+      "czytaj ekran",
+      "co jest na ekranie",
+      "przeczytaj to"
+    ],
+    "read_buttons": [
+      "przeczytaj przyciski",
+      "wymień przyciski",
+      "jakie są przyciski",
+      "co mogę nacisnąć"
+    ],
+    "scroll_down": [
+      "przewiń w dół",
+      "w dół",
+      "następna strona"
+    ],
+    "scroll_up": [
+      "przewiń w górę",
+      "w górę",
+      "poprzednia strona"
+    ],
+    "lock": [
+      "zablokuj ekran",
+      "zablokuj telefon"
+    ],
+    "volume_up": [
+      "głośniej",
+      "podgłośnij",
+      "zwiększ głośność"
+    ],
+    "volume_down": [
+      "ciszej",
+      "przycisz",
+      "zmniejsz głośność"
+    ],
+    "clear_text": [
+      "wyczyść tekst",
+      "wyczyść pole",
+      "usuń to"
+    ],
+    "quit": [
+      "zakończ",
+      "wyjdź",
+      "przestań słuchać",
+      "do widzenia",
+      "wyłącz się"
+    ],
+    "help": [
+      "pomoc",
+      "co potrafisz",
+      "pomóż mi"
+    ],
+    "open_accessibility": [
+      "otwórz ustawienia ułatwień dostępu",
+      "ustawienia ułatwień dostępu"
+    ],
+    "open_app_settings": [
+      "otwórz ustawienia aplikacji",
+      "ograniczone ustawienia"
+    ],
+    "yes": [
+      "tak",
+      "jasne",
+      "potwierdź",
+      "zrób to",
+      "dawaj",
+      "dobrze"
+    ],
+    "no": [
+      "nie",
+      "anuluj",
+      "stop",
+      "nieważne",
+      "zostaw"
+    ]
+  },
+  "verbs": {
+    "tap": [
+      "naciśnij",
+      "dotknij",
+      "kliknij",
+      "wybierz",
+      "stuknij"
+    ],
+    "open": [
+      "otwórz",
+      "uruchom",
+      "włącz",
+      "przejdź do"
+    ],
+    "call": [
+      "zadzwoń do",
+      "zadzwoń",
+      "dzwoń do"
+    ],
+    "whatsapp": [
+      "wyślij wiadomość do",
+      "napisz do",
+      "wiadomość do",
+      "whatsapp"
+    ],
+    "search": [
+      "szukaj",
+      "wyszukaj",
+      "znajdź",
+      "sprawdź"
+    ],
+    "type": [
+      "wpisz",
+      "napisz",
+      "wprowadź tekst"
+    ],
+    "fill": [
+      "wypełnij",
+      "uzupełnij",
+      "ustaw"
+    ],
+    "language": [
+      "zmień język na",
+      "przełącz język na",
+      "mów po"
+    ]
+  },
+  "fillers": [
+    "przycisk",
+    "proszę",
+    "na",
+    "do",
+    "mój",
+    "moja",
+    "moje",
+    "kontakt",
+    "aplikacja",
+    "aplikację",
+    "pole"
+  ],
+  "with": [
+    "na",
+    "jako"
+  ],
+  "risky": [
+    "wyślij",
+    "usuń",
+    "zapłać",
+    "kup",
+    "zamów",
+    "potwierdź",
+    "opublikuj",
+    "przelej",
+    "przelew",
+    "wyloguj",
+    "odinstaluj",
+    "resetuj",
+    "wymaż",
+    "zablokuj"
+  ],
+  "ordinals": [
+    "pierwszy|pierwsza|jeden|1.",
+    "drugi|druga|dwa|2.",
+    "trzeci|trzecia|trzy|3.",
+    "czwarty|czwarta|cztery|4.",
+    "piąty|piąta|pięć|5."
+  ],
+  "say": {
+    "here": "Tak?",
+    "welcome": "Cześć, jestem Jarvis, twój asystent głosowy. Powiedz %s, poczekaj na sygnał, a potem zapytaj o coś. Mogę czytać ekran, naciskać przyciski, wypełniać formularze, otwierać aplikacje, dzwonić do ludzi i odpowiadać na pytania. Powiedz pomoc w dowolnej chwili.",
+    "setup_hint": "Najpierw trzeba mnie włączyć w ustawieniach ułatwień dostępu. Powiedz otwórz ustawienia ułatwień dostępu, znajdź Jarvisa na liście i włącz go. Jeśli przełącznik się nie włącza, powiedz otwórz ustawienia aplikacji, dotknij trzech kropek w prawym górnym rogu, wybierz zezwól na ograniczone ustawienia i spróbuj ponownie.",
+    "ok": "Dobrze.",
+    "notfound": "Nie znalazłem %s.",
+    "confirm": "Nacisnąć %s? Powiedz tak lub nie.",
+    "confirm_call": "Zadzwonić do %s? Powiedz tak lub nie.",
+    "tapfail": "To naciśnięcie nie zadziałało.",
+    "disabled": "%s jest wyszarzony, więc nie można go nacisnąć.",
+    "choose": "Znalazłem %d wyników dla %s. Powiedz pierwszy, drugi i tak dalej.",
+    "noservice": "Włącz Jarvisa w ustawieniach ułatwień dostępu.",
+    "nocontacts": "Potrzebuję pozwolenia na odczyt kontaktów.",
+    "contact_missing": "Nie znalazłem kontaktu o nazwie %s.",
+    "app_missing": "Nie znalazłem aplikacji o nazwie %s.",
+    "opening": "Otwieram %s.",
+    "field_missing": "Nie znalazłem pola o nazwie %s.",
+    "no_input": "Najpierw dotknij pola tekstowego.",
+    "no_screenshot": "Nie udało się zrobić zrzutu tego ekranu.",
+    "notunderstood": "Przepraszam, nie zrozumiałem.",
+    "ai_error": "Usługa sztucznej inteligencji nie odpowiada. Spróbuj później.",
+    "switched": "Teraz mówię: %s.",
+    "lang_missing": "Nie mam języka o nazwie %s.",
+    "bye": "Do widzenia.",
+    "empty_screen": "Nic nie widzę na tym ekranie.",
+    "buttons": "Przyciski:",
+    "unlabeled": "Przyciski bez nazwy: %d.",
+    "need_arg": "Powiedz to jeszcze raz z nazwą.",
+    "openfail": "Nie udało się tego otworzyć.",
+    "help": "Możesz powiedzieć: wstecz, ekran główny, przeczytaj ekran, przeczytaj przyciski, naciśnij i nazwę przycisku, otwórz i nazwę aplikacji, zadzwoń lub wyślij wiadomość do i nazwę kontaktu, szukaj, wpisz albo zmień język.",
+    "prompt": "Słucham. Co chcesz zrobić?",
+    "idle_bye": "Dobrze, będę tutaj. Powiedz %s, gdy będę potrzebny."
+  }
+}
