@@ -1,4 +1,4 @@
-package ng.ainow.nova
+package ng.ainow.jarvis.ui
 
 import android.Manifest
 import android.app.Activity
@@ -15,11 +15,27 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import ng.ainow.jarvis.BuildConfig
+import ng.ainow.jarvis.Prefs
+import ng.ainow.jarvis.ai.AiClient
+import ng.ainow.jarvis.language.LangDetect
+import ng.ainow.jarvis.language.Packs
+import ng.ainow.jarvis.listening.VoiceService
+import ng.ainow.jarvis.listening.Yarn
+import ng.ainow.jarvis.speaking.Mms
+import ng.ainow.jarvis.speaking.Speaker
 
 /** Setup screen. Everything is a plain labelled control so Jieshuo/TalkBack read it well. */
 class MainActivity : Activity() {
+    companion object {
+        /** True while this screen is in front. Android lets Jarvis open other apps then, even without accessibility. */
+        @Volatile
+        var showing = false
+    }
+
     private lateinit var prefs: Prefs
     private lateinit var status: TextView
+    private lateinit var step1: Button
     private lateinit var langBtn: Button
     private lateinit var nameField: EditText
     private var askedOnce = false
@@ -56,14 +72,15 @@ class MainActivity : Activity() {
         status = label("")
         col.addView(status)
 
-        col.addView(button("Step 1: turn on Jarvis in accessibility settings") { openAccessibility() })
+        step1 = button("Step 1: turn on Jarvis in accessibility settings") { openAccessibility() }
+        col.addView(step1)
         col.addView(button("Step 2: allow microphone, contacts and notifications") { askPermissions() })
 
         langBtn = button("") { startActivity(Intent(this, LanguageActivity::class.java)) }
         col.addView(langBtn)
 
-        col.addView(label("Wake phrase: Hey Jarvis. Say it clearly, wait for the beep, then give your command. Best in a quiet place, with the phone close to your mouth."))
-        col.addView(label("Wake sensitivity: a number between 0.02 and 0.9. Lower means easier to wake. Try 0.08 if it does not react."))
+        col.addView(label("Wake word: say Jarvis or Hey Jarvis. Say it clearly, wait for the beep, then give your command. Best in a quiet place, with the phone close to your mouth."))
+        col.addView(label("Wake sensitivity (only for the backup Hey Jarvis model): a number between 0.02 and 0.9. Lower means easier to wake. Try 0.08 if it does not react."))
         sensField = EditText(this)
         sensField.setText(prefs.wakeThreshold.toString())
         sensField.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
@@ -85,7 +102,6 @@ class MainActivity : Activity() {
         }
         col.addView(yarnConsent)
 
-
         col.addView(label("Safety: Jarvis always asks \"are you sure?\" before pressing a button that sends, posts, submits, pays, buys or deletes something, like sending a message or submitting a form. Opening apps and moving around never asks."))
         confirmAll = CheckBox(this)
         confirmAll.text = "Ask before every tap, even simple ones like opening a chat or a menu"
@@ -97,8 +113,12 @@ class MainActivity : Activity() {
         quiet.isChecked = prefs.quietEars
         col.addView(quiet)
         col.addView(button("Read the data notice") { showDataNotice() })
-        col.addView(button("Save settings") { save(); status.text = "Saved." })
-
+        col.addView(button("Save settings") {
+            save()
+            // Jarvis is used on top of other apps, so get out of the way once settings are saved.
+            android.widget.Toast.makeText(this, "Settings saved", android.widget.Toast.LENGTH_SHORT).show()
+            finish()
+        })
 
         startBtn = button("") {
             save()
@@ -123,12 +143,18 @@ class MainActivity : Activity() {
         setIntent(intent)
     }
 
+    override fun onPause() {
+        showing = false
+        super.onPause()
+    }
+
     override fun onResume() {
         super.onResume()
+        showing = true
         // Developer shortcut (debug builds only): read any text the way Jarvis reads a screen.
-        //   adb shell am start -n ng.ainow.nova/.MainActivity --es speak "Some text"
+        //   adb shell am start -n ng.ainow.jarvis/.ui.MainActivity --es speak "Some text"
         // Developer shortcut: list the languages this phone can speak and recognise by itself.
-        //   adb shell am start --activity-single-top -n ng.ainow.nova/.MainActivity --ez languages true
+        //   adb shell am start --activity-single-top -n ng.ainow.jarvis/.ui.MainActivity --ez languages true
         if (BuildConfig.DEBUG && intent?.getBooleanExtra("languages", false) == true) {
             intent.removeExtra("languages")
             logPhoneLanguages()
@@ -140,6 +166,19 @@ class MainActivity : Activity() {
         preloadPreviews()
         autoStart()
         refresh()
+        explainAccessibilityIfNeeded()
+    }
+
+    /** Opened from the "Jarvis needs accessibility" notification: say why, and put focus on Step 1. */
+    private fun explainAccessibilityIfNeeded() {
+        if (intent?.getBooleanExtra(SetupNotice.EXTRA_NEED_ACCESSIBILITY, false) != true) return
+        intent.removeExtra(SetupNotice.EXTRA_NEED_ACCESSIBILITY)
+        if (serviceOn()) return
+        step1.postDelayed({
+            step1.requestFocus()
+            step1.performAccessibilityAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, null)
+            announce("Accessibility is turned off, so Jarvis cannot open apps. Tap Step 1 to turn it on.")
+        }, 500)
     }
 
     /**
@@ -272,7 +311,7 @@ class MainActivity : Activity() {
             announce("Microphone, contacts and notifications are already allowed.")
             return
         }
-        val sp = getSharedPreferences("nova", MODE_PRIVATE)
+        val sp = getSharedPreferences("jarvis", MODE_PRIVATE)
         val blocked = missing.any { sp.getBoolean("asked_$it", false) && !shouldShowRequestPermissionRationale(it) }
         if (blocked) {
             openAppInfo()

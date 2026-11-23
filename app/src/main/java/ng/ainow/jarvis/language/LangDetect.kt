@@ -1,4 +1,4 @@
-package ng.ainow.nova
+package ng.ainow.jarvis.language
 
 import com.google.android.gms.tasks.Tasks
 import com.google.mlkit.nl.languageid.LanguageIdentification

@@ -28,7 +28,7 @@
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
 
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -37,17 +37,17 @@
         </activity>
 
         <activity
-            android:name=".LanguageActivity"
+            android:name=".ui.LanguageActivity"
             android:exported="false"
             android:label="Choose language" />
 
         <service
-            android:name=".VoiceService"
+            android:name=".listening.VoiceService"
             android:exported="false"
             android:foregroundServiceType="microphone" />
 
         <service
-            android:name=".NovaAccessibilityService"
+            android:name=".actions.JarvisAccessibilityService"
             android:exported="true"
             android:label="Jarvis"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">

@@ -1,4 +1,4 @@
-package ng.ainow.nova
+package ng.ainow.jarvis.language
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

@@ -1,4 +1,4 @@
-package ng.ainow.nova
+package ng.ainow.jarvis.actions
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.view.Display
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import ng.ainow.jarvis.ui.SetupNotice
 
 /** One thing on screen you can interact with. */
 class Item(
@@ -27,18 +28,19 @@ class Item(
 class Screen(val controls: List<Item>, val texts: List<String>, val hasPassword: Boolean, val pkg: String)
 
 /**
- * The hands and eyes of Nova. Runs next to Jieshuo/TalkBack: it never speaks and never
+ * The hands and eyes of Jarvis. Runs next to Jieshuo/TalkBack: it never speaks and never
  * steals focus, it only reads the screen tree and performs actions when asked.
  */
-class NovaAccessibilityService : AccessibilityService() {
+class JarvisAccessibilityService : AccessibilityService() {
 
     companion object {
         @Volatile
-        var inst: NovaAccessibilityService? = null
+        var inst: JarvisAccessibilityService? = null
     }
 
     override fun onServiceConnected() {
         inst = this
+        SetupNotice.cancel(this) // the "turn on accessibility" message is no longer needed
     }
 
     override fun onUnbind(intent: Intent?): Boolean {
@@ -163,6 +165,12 @@ class NovaAccessibilityService : AccessibilityService() {
         val b = Bundle()
         b.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text)
         return node.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, b)
+    }
+
+    /** Presses the keyboard's Enter / Search key on [node] (Android 11+; older phones can't). */
+    fun pressEnter(node: AccessibilityNodeInfo): Boolean {
+        if (Build.VERSION.SDK_INT < 30) return false
+        return node.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_IME_ENTER.id)
     }
 
     fun scroll(forward: Boolean): Boolean {

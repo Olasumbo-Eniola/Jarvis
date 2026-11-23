@@ -1,4 +1,4 @@
-package ng.ainow.nova
+package ng.ainow.jarvis.actions
 
 import android.accessibilityservice.AccessibilityService
 import android.content.Context
@@ -12,8 +12,19 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.provider.ContactsContract
-import org.json.JSONObject
 import java.net.URLEncoder
+import ng.ainow.jarvis.Prefs
+import ng.ainow.jarvis.ai.AiClient
+import ng.ainow.jarvis.language.Cmd
+import ng.ainow.jarvis.language.LangDetect
+import ng.ainow.jarvis.language.Matcher
+import ng.ainow.jarvis.language.Nlu
+import ng.ainow.jarvis.language.Pack
+import ng.ainow.jarvis.language.Packs
+import ng.ainow.jarvis.ui.MainActivity
+import ng.ainow.jarvis.ui.SetupNotice
+import ng.ainow.jarvis.language.PhoneNumber
+import org.json.JSONObject
 
 /** Nigerian packs whose commands are always understood, for code-switching. */
 private val NIGERIAN = listOf("pcm", "yo", "ig", "ha")
@@ -67,12 +78,12 @@ class Brain(
     private var work = 0
     val busy: Boolean get() = work > 0
 
-    private val FOLLOW_MS = 12_000L
     private val ANSWER_MS = 15_000L
-    private var convoUntil = 0L
     private var pendingUntil = 0L
     private var pendingYes: (() -> Unit)? = null
     private var pendingChoice: List<() -> Unit>? = null
+    /** "send message to" with no name: the next thing said is the name or number (command id). */
+    private var pendingArg: String? = null
 
     private fun begin() { work++ }
     private fun end() {
@@ -93,6 +104,7 @@ class Brain(
     private fun clearPending() {
         pendingYes = null
         pendingChoice = null
+        pendingArg = null
     }
 
     /** First start: introduce Jarvis and say what to do next. Spoken once. */
@@ -100,7 +112,7 @@ class Brain(
         if (prefs.onboarded) return
         prefs.onboarded = true
         say("welcome", wakePhrase)
-        if (NovaAccessibilityService.inst == null) say("setup_hint")
+        if (JarvisAccessibilityService.inst == null) say("setup_hint")
     }
 
     /** Set by the service so the welcome can name the real wake phrase. */
@@ -108,14 +120,35 @@ class Brain(
 
     // ------------------------------------------------------------------ hearing
 
-    /** [alts] are the recogniser's alternatives, best first. */
-    fun heard(alts: List<String>, addressed: Boolean = false) {
+    /** True while Jarvis has asked a yes/no or "which one" question and is waiting for the answer. */
+    val awaitingAnswer: Boolean
+        get() = (pendingYes != null || pendingChoice != null || pendingArg != null) && SystemClock.elapsedRealtime() <= pendingUntil
+
+    /**
+     * [alts] are the recogniser's alternatives, best first.
+     * Returns true if Jarvis acted on what it heard, false if it ignored it.
+     * Jarvis only acts when it was called by name (or the wake word engine heard the name),
+     * except for the answer to a question it has just asked.
+     */
+    fun heard(alts: List<String>, addressed: Boolean = false): Boolean {
         val now = SystemClock.elapsedRealtime()
         // [addressed] = the wake word engine already heard the call, so no name is needed in the sentence.
         val cands = alts.map { Nlu.stripWake(it, prefs.wakeName) }.map { Pair(it.first || addressed, it.second) }
 
         // Reply in the language the user just spoke (a Yorùbá/English mix counts as Yorùbá).
         cands.firstOrNull()?.second?.let { LangDetect.quick(it) }?.let { spokenLang = it }
+
+        // Asked "who to?" after "send message to": what they say now is the name or number,
+        // unless it is a whole new command ("open YouTube").
+        val pa = pendingArg
+        if (pa != null) {
+            pendingArg = null
+            val rest = cands.firstOrNull()?.second.orEmpty()
+            if (now <= pendingUntil && rest.isNotBlank() && Nlu.parse(rest, packs) is Cmd.Unknown) {
+                run(Nlu.argument(pa, rest, packs))
+                return true
+            }
+        }
 
         // Waiting for "yes/no" or "first/second"?
         if (pendingYes != null || pendingChoice != null) {
@@ -129,24 +162,23 @@ class Brain(
                         val n = Nlu.ordinal(rest, packs)
                         if (n != null && n in 1..pc.size) {
                             clearPending()
-                            convoUntil = now + FOLLOW_MS
                             pc[n - 1]()
-                            return
+                            return true
                         }
                     }
                     val c = Nlu.parse(rest, packs)
                     if (c is Cmd.Simple && c.id == "yes" && py != null) {
                         clearPending()
                         py()
-                        return
+                        return true
                     }
                     if (c is Cmd.Simple && c.id == "no") {
                         clearPending()
                         say("ok")
-                        return
+                        return true
                     }
                 }
-                if (cands.none { it.first }) return // not addressed to Nova: keep waiting quietly
+                if (cands.none { it.first }) return false // not addressed to Jarvis: keep waiting quietly
                 clearPending()
             }
         }
@@ -155,16 +187,9 @@ class Brain(
         var unknown: Cmd? = null
         var unknownHad = false
         for ((had, rest) in cands) {
-            val addressed = had || now < convoUntil || !prefs.requireName
-            if (!addressed) continue
-            if (rest.isBlank()) {
-                if (had && !addressed) {
-                    convoUntil = now + FOLLOW_MS
-                    say("here")
-                    return
-                }
-                continue
-            }
+            // No follow-up window: every new command needs the name again.
+            if (!had && prefs.requireName) continue
+            if (rest.isBlank()) continue
             val c = Nlu.parse(rest, packs)
             if (c is Cmd.Unknown) {
                 if (unknown == null) {
@@ -176,11 +201,10 @@ class Brain(
                 break
             }
         }
-        // Stray chatter in the follow-up window is ignored quietly unless Nova was called by name.
-        if (chosen == null && !unknownHad && !prefs.aiAllowed) return
-        val cmd = chosen ?: unknown ?: return
-        convoUntil = now + FOLLOW_MS
+        if (chosen == null && !unknownHad && !prefs.aiAllowed) return false
+        val cmd = chosen ?: unknown ?: return false
         run(cmd)
+        return true
     }
 
     private fun run(cmd: Cmd) {
@@ -194,7 +218,7 @@ class Brain(
     // ------------------------------------------------------------------ simple commands
 
     private fun simple(id: String) {
-        val svc = NovaAccessibilityService.inst
+        val svc = JarvisAccessibilityService.inst
         val needsService = id !in setOf(
             "help", "quit", "volume_up", "volume_down", "yes", "no", "open_accessibility", "open_app_settings"
         )
@@ -241,12 +265,12 @@ class Brain(
         }
     }
 
-    private fun readScreen(svc: NovaAccessibilityService) {
+    private fun readScreen(svc: JarvisAccessibilityService) {
         val scr = svc.scan()
         if (scr.texts.isEmpty()) say("empty_screen") else read(scr.texts.joinToString(". "))
     }
 
-    private fun readButtons(svc: NovaAccessibilityService) {
+    private fun readButtons(svc: JarvisAccessibilityService) {
         val scr = svc.scan()
         val names = scr.controls.filter { !it.unlabeled && it.label.isNotBlank() }.map { it.label }.distinct().take(25)
         val unl = scr.controls.count { it.unlabeled }
@@ -263,15 +287,18 @@ class Brain(
 
     private fun withArg(c: Cmd.Arg) {
         if (c.arg.isBlank() && c.id != "fill") {
+            clearPending()
+            pendingArg = c.id
+            pendingUntil = SystemClock.elapsedRealtime() + ANSWER_MS
             say("need_arg")
             return
         }
         when (c.id) {
             "tap" -> tap(c.arg)
-            "open" -> openApp(c.arg)
+            "open" -> openThen(c.arg)
             "call" -> call(c.arg)
             "whatsapp" -> whatsapp(c.arg)
-            "search" -> launch(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q=" + URLEncoder.encode(c.arg, "UTF-8"))))
+            "search" -> googleSearch(c.arg)
             "type" -> typeText(c.arg)
             "fill" -> fill(c.arg, c.arg2)
             "language" -> switchLanguage(c.arg)
@@ -279,10 +306,23 @@ class Brain(
         }
     }
 
+    /**
+     * Android blocks apps in the background from opening other screens. Jarvis is allowed while its
+     * accessibility service is on (or its own screen is in front). Otherwise say so, instead of
+     * saying "Opening..." and then nothing happening.
+     */
+    private fun canOpen(): Boolean {
+        if (JarvisAccessibilityService.inst != null || MainActivity.showing) return true
+        say("noservice_open")
+        SetupNotice.show(ctx) // tapping a notification is the one way back in Android allows
+        return false
+    }
+
     private fun launch(i: Intent) {
+        if (!canOpen()) return
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         try {
-            val host: Context = NovaAccessibilityService.inst ?: ctx
+            val host: Context = JarvisAccessibilityService.inst ?: ctx
             host.startActivity(i)
         } catch (e: Exception) {
             say("openfail")
@@ -309,7 +349,7 @@ class Brain(
     }
 
     private fun tap(target: String) {
-        val svc = NovaAccessibilityService.inst
+        val svc = JarvisAccessibilityService.inst
         if (svc == null) { say("noservice"); return }
         val scr = svc.scan()
         val scored = scr.controls
@@ -335,7 +375,7 @@ class Brain(
         clickItem(svc, ties[0])
     }
 
-    private fun clickItem(svc: NovaAccessibilityService, item: Item) {
+    private fun clickItem(svc: JarvisAccessibilityService, item: Item) {
         if (!item.enabled) {
             say("disabled", item.label)
             return
@@ -351,7 +391,7 @@ class Brain(
         }
     }
 
-    private fun tapPoint(svc: NovaAccessibilityService, rect: Rect, label: String) {
+    private fun tapPoint(svc: JarvisAccessibilityService, rect: Rect, label: String) {
         confirmThen(label) {
             begin()
             svc.tapAt(rect.exactCenterX(), rect.exactCenterY()) { ok ->
@@ -363,7 +403,7 @@ class Brain(
         }
     }
 
-    private fun ocrTap(target: String, svc: NovaAccessibilityService, scr: Screen) {
+    private fun ocrTap(target: String, svc: JarvisAccessibilityService, scr: Screen) {
         if (Build.VERSION.SDK_INT < 30) {
             say("notfound", target)
             return
@@ -418,7 +458,7 @@ class Brain(
      *  1. name the unlabeled icon buttons from their pictures,
      *  2. otherwise show Gemini the whole screenshot and ask where the control is.
      */
-    private fun iconFallback(target: String, svc: NovaAccessibilityService, scr: Screen, bmp: Bitmap) {
+    private fun iconFallback(target: String, svc: JarvisAccessibilityService, scr: Screen, bmp: Bitmap) {
         if (!prefs.aiAllowed || scr.hasPassword) {
             say("notfound", target)
             end()
@@ -448,7 +488,7 @@ class Brain(
         }
     }
 
-    private fun locateFallback(target: String, svc: NovaAccessibilityService, bmp: Bitmap) {
+    private fun locateFallback(target: String, svc: JarvisAccessibilityService, bmp: Bitmap) {
         ai.locate(bmp, target) { rect ->
             if (rect == null) say("notfound", target) else tapPoint(svc, rect, target)
             end()
@@ -457,12 +497,59 @@ class Brain(
 
     // ---- text fields ----
 
-    private fun typeText(value: String) {
-        val svc = NovaAccessibilityService.inst
+    /**
+     * Types into the text box the cursor is in. If there isn't one, uses the search box on screen
+     * (or the only text box). If search is a button or magnifier icon, taps it first. In a search
+     * box, presses Enter afterwards so the search actually runs.
+     * [search] = this came from "open YouTube and search for ..." rather than "type ...".
+     */
+    private fun typeText(value: String, search: Boolean = false) {
+        val svc = JarvisAccessibilityService.inst
         if (svc == null) { say("noservice"); return }
-        val f = svc.focusedInput()
-        if (f == null) say("no_input") else withTones(spoken(value)) { svc.setText(f, it) }
+        val missing = if (search) "no_search" else "no_input"
+        val box = svc.focusedInput()?.takeIf { !it.isPassword } ?: textBox(svc)
+        if (box != null) {
+            typeInto(svc, box, value, search)
+            return
+        }
+        val button = svc.scan().controls.firstOrNull { !it.editable && it.enabled && isSearchWord(it.label) }
+        if (button == null) { say(missing); return }
+        begin()
+        svc.click(button) { _ ->
+            // Give the app a moment to open its search box.
+            main.postDelayed({
+                val opened = svc.focusedInput()?.takeIf { !it.isPassword } ?: textBox(svc)
+                if (opened == null) say(missing) else typeInto(svc, opened, value, true)
+                end()
+            }, 800)
+        }
     }
+
+    /** The search box on screen, or the only text box if there is just one. Never a password box. */
+    private fun textBox(svc: JarvisAccessibilityService): android.view.accessibility.AccessibilityNodeInfo? {
+        val inputs = svc.scan().controls.filter { it.editable && it.enabled && !it.node.isPassword }
+        return (inputs.firstOrNull { isSearchBox(it.node) } ?: inputs.singleOrNull())?.node
+    }
+
+    private fun typeInto(svc: JarvisAccessibilityService, box: android.view.accessibility.AccessibilityNodeInfo, value: String, enter: Boolean) {
+        val pressEnter = enter || isSearchBox(box)
+        withTones(spoken(value)) {
+            svc.setText(box, it)
+            if (pressEnter) main.postDelayed({ svc.pressEnter(box) }, 150)
+        }
+    }
+
+    /** "Search", "Search YouTube", or the current language's word for search. */
+    private fun isSearchWord(label: String): Boolean {
+        val n = Matcher.norm(label)
+        if (n.isEmpty()) return false
+        if (n.contains("search")) return true
+        if (pack.code == "en") return false
+        return pack.verbs["search"].orEmpty().map { Matcher.norm(it) }.any { it.length >= 3 && n.contains(it) }
+    }
+
+    private fun isSearchBox(n: android.view.accessibility.AccessibilityNodeInfo): Boolean =
+        isSearchWord(listOf(n.hintText, n.contentDescription, n.viewIdResourceName, n.className).joinToString(" ") { it?.toString().orEmpty() })
 
     /**
      * Dictated Yorùbá/Igbo/Hausa: YarnGPT already writes most tone marks; Gemini fixes the rest
@@ -480,7 +567,7 @@ class Brain(
     }
 
     private fun fill(field: String, value: String) {
-        val svc = NovaAccessibilityService.inst
+        val svc = JarvisAccessibilityService.inst
         if (svc == null) { say("noservice"); return }
         if (field.isBlank() || value.isBlank()) { say("need_arg"); return }
         val inputs = svc.scan().controls.filter { it.editable }
@@ -497,29 +584,92 @@ class Brain(
 
     // ---- apps, contacts, web ----
 
-    private fun openApp(name: String) {
+    private fun googleSearch(query: String) {
+        launch(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q=" + URLEncoder.encode(query, "UTF-8"))))
+    }
+
+    /** Names that mean "search the web", so "open Google and search for X" goes straight to results. */
+    private val WEB = setOf("google", "google search", "chrome", "browser", "the browser", "internet", "the internet", "web", "the web")
+
+    /**
+     * "open Google and search for song" -> Google results for "song".
+     * "open YouTube and search for song" -> opens YouTube, then searches inside it.
+     * "open WhatsApp and read the screen" -> opens WhatsApp, then reads it.
+     * Anything else is a plain "open".
+     */
+    private fun openThen(arg: String) {
+        val split = Nlu.splitThen(arg)
+        // An app with "and" in its name wins ("Tom and Jerry").
+        if (split == null || (bestApp(arg)?.second ?: 0.0) >= 0.9) { openApp(arg); return }
+        val (app, rest) = split
+        val next = Nlu.parse(rest, packs)
+        if (next is Cmd.Unknown) { openApp(arg); return }
+        val isSearch = next is Cmd.Arg && next.id == "search"
+        if (isSearch && Matcher.norm(app) in WEB) {
+            googleSearch((next as Cmd.Arg).arg)
+            return
+        }
+        if (!openApp(app)) return
+        begin()
+        // Wait for the app to open before working inside it.
+        main.postDelayed({
+            if (isSearch) typeText((next as Cmd.Arg).arg, search = true) else run(next)
+            end()
+        }, 2500)
+    }
+
+    private fun bestApp(name: String): Pair<android.content.pm.ResolveInfo, Double>? {
+        val pm = ctx.packageManager
+        val q = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+        return pm.queryIntentActivities(q, 0)
+            .map { it to Matcher.score(name, it.loadLabel(pm).toString()) }
+            .filter { it.second >= 0.6 }
+            .maxByOrNull { it.second }
+    }
+
+    /** Returns false if nothing could be opened. */
+    private fun openApp(name: String): Boolean {
         // "go to the home screen" arrives as open + "home screen": treat it as the plain command
         val asCmd = Nlu.parse(name, packs)
         if (asCmd is Cmd.Simple && asCmd.id != "yes" && asCmd.id != "no") {
             simple(asCmd.id)
-            return
+            return true
+        }
+        // "storage settings" -> the Storage page, not the main Settings app.
+        if (SettingsPages.mentionsSettings(name)) SettingsPages.find(name)?.let { return openSettingsPage(it) }
+        val best = bestApp(name)
+        if (best == null) {
+            // "open bluetooth": no app by that name, but there is a settings page.
+            SettingsPages.find(name)?.let { return openSettingsPage(it) }
+            say("app_missing", name)
+            return false
         }
         val pm = ctx.packageManager
-        val q = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-        val best = pm.queryIntentActivities(q, 0)
-            .map { it to Matcher.score(name, it.loadLabel(pm).toString()) }
-            .filter { it.second >= 0.6 }
-            .maxByOrNull { it.second }
-        if (best == null) {
+        val i = pm.getLaunchIntentForPackage(best.first.activityInfo.packageName)
+        if (i == null) {
             say("app_missing", name)
-            return
+            return false
         }
-        val pkg = best.first.activityInfo.packageName
-        val i = pm.getLaunchIntentForPackage(pkg)
-        if (i == null) say("app_missing", name) else {
-            say("opening", best.first.loadLabel(pm).toString())
-            launch(i)
+        if (!canOpen()) return false
+        say("opening", best.first.loadLabel(pm).toString())
+        launch(i)
+        return true
+    }
+
+    private fun openSettingsPage(p: SettingsPages.Page): Boolean {
+        if (!canOpen()) return false
+        say("opening", p.title + " settings")
+        val host: Context = JarvisAccessibilityService.inst ?: ctx
+        for (action in listOf(p.action, android.provider.Settings.ACTION_SETTINGS)) {
+            try {
+                host.startActivity(Intent(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                return true
+            } catch (e: Exception) {
+                // Some phones hide a page: fall back to the main Settings screen.
+            }
         }
+        say("openfail")
+        return false
     }
 
     private class Contact(val name: String, val number: String)
@@ -551,26 +701,49 @@ class Brain(
         return best
     }
 
+    /** "call Mum" or "call 0803 123 4567": a number said out loud doesn't need to be a contact. */
     private fun call(name: String) {
-        val c = findContact(name) ?: return
-        val digits = c.number.filter { it.isDigit() || it == '+' }
-        pendingYes = { launch(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$digits"))) }
-        pendingChoice = null
-        pendingUntil = SystemClock.elapsedRealtime() + ANSWER_MS
-        say("confirm_call", c.name)
-    }
-
-    private fun whatsapp(name: String) {
-        val asDigits = name.filter { it.isDigit() }
-        var num: String
-        if (asDigits.length >= 7) {
-            num = asDigits
+        val typed = PhoneNumber.parse(name)
+        val digits: String
+        val who: String
+        if (typed != null) {
+            digits = typed
+            who = PhoneNumber.spoken(typed)
         } else {
             val c = findContact(name) ?: return
-            num = c.number.filter { it.isDigit() }
+            digits = c.number.filter { it.isDigit() || it == '+' }
+            who = c.name
         }
-        if (num.startsWith("0") && num.length == 11) num = "234" + num.substring(1) // Nigerian local format
-        launch(Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$num")))
+        pendingYes = { launch(Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + Uri.encode(digits)))) }
+        pendingChoice = null
+        pendingUntil = SystemClock.elapsedRealtime() + ANSWER_MS
+        say("confirm_call", who)
+    }
+
+    /**
+     * "message Mum", "send message to 0803 123 4567", "text 470".
+     * A full phone number (or a contact) opens a WhatsApp chat. A short number like 470 can't be on
+     * WhatsApp, so it opens a text message (SMS) instead. Nothing is sent until the user says so.
+     */
+    private fun whatsapp(name: String) {
+        val typed = PhoneNumber.parse(name)
+        val num: String
+        if (typed != null) {
+            num = typed
+            if (!canOpen()) return
+            if (num.count { it.isDigit() } < PhoneNumber.WHATSAPP_MIN_DIGITS) {
+                say("opening", "a text message to " + PhoneNumber.spoken(num))
+                launch(Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:" + Uri.encode(num))))
+                return
+            }
+            say("opening", "WhatsApp for " + PhoneNumber.spoken(num))
+        } else {
+            val c = findContact(name) ?: return
+            if (!canOpen()) return
+            num = c.number
+            say("opening", "WhatsApp for " + c.name)
+        }
+        launch(Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/" + PhoneNumber.international(num))))
     }
 
     // ---- language ----
@@ -596,7 +769,7 @@ class Brain(
             say("notunderstood")
             return
         }
-        val svc = NovaAccessibilityService.inst
+        val svc = JarvisAccessibilityService.inst
         val scr = svc?.scan()
         val labels = if (scr == null || scr.hasPassword) emptyList()
         else scr.controls.map { it.label }.filter { it.isNotBlank() }.distinct().take(40)

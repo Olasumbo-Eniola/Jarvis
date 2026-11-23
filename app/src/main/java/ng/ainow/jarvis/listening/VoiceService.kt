@@ -1,4 +1,4 @@
-package ng.ainow.nova
+package ng.ainow.jarvis.listening
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -26,12 +26,19 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import ng.ainow.jarvis.Prefs
+import ng.ainow.jarvis.actions.Brain
+import ng.ainow.jarvis.speaking.Speaker
+import ng.ainow.jarvis.ui.SetupNotice
 
 /**
  * Works like "Hey Google":
- *   WAKE     a small on-device model listens for the wake phrase (no beeps, little battery)
- *   SESSION  one beep, then the speech recogniser takes your command; it keeps listening for
- *            follow-ups until you go quiet, then plays a closing beep and returns to WAKE
+ *   WAKE     a small on-device model listens for "Jarvis" or "Hey Jarvis" (no beeps, little battery).
+ *            First choice is the keyword spotter (KwsWake); if it can't start, the older
+ *            "Hey Jarvis"-only model (openWakeWord) is used instead
+ *   SESSION  one beep, then the speech recogniser takes ONE command. If Jarvis asks a question
+ *            ("are you sure?", "which one?") it listens for the answer; otherwise it plays a
+ *            closing beep and returns to WAKE, so every new command needs the name again
  *   LOOP     fallback if the wake model cannot start: the old always-listening mode, where the
  *            name must be said inside the sentence
  */
@@ -62,11 +69,18 @@ class VoiceService : Service() {
     private var muted = false
     private var mode = Mode.LOOP
 
+    private var kws: KwsWake? = null
+    private var kwsFailed = false
     private var wake: WakeWordEngine? = null
     private var wakeScope: CoroutineScope? = null
     private var wakeJob: Job? = null
     private var tone: ToneGenerator? = null
     private var silentTurns = 0
+    /** Set once the current session's command has been acted on. */
+    private var handledInSession = false
+
+    /** Ignore wake detections this long after Jarvis stops talking, so it cannot wake itself. */
+    private val SELF_VOICE_MS = 1500L
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -92,6 +106,8 @@ class VoiceService : Service() {
         running = false
         main.removeCallbacksAndMessages(null)
         stopWake(release = true)
+        try { kws?.release() } catch (e: Throwable) {}
+        kws = null
         try { rec?.destroy() } catch (e: Exception) {}
         rec = null
         yarnEars?.cancel()
@@ -109,6 +125,7 @@ class VoiceService : Service() {
             enterLoop("Microphone permission is missing.")
             return
         }
+        if (startKws()) return
         try {
             val th = prefs.wakeThreshold
             val model = WakeWordModel("Hey Jarvis", "hey_jarvis_v0.1.onnx", th)
@@ -120,8 +137,8 @@ class VoiceService : Service() {
             wake = engine
             wakeJob = scope.launch {
                 engine.detections.collect { d ->
-                    lastWake = "Last wake: score " + String.format("%.2f", d.score) + " (threshold " + String.format("%.2f", th) + ")"
-                    onWakeHeard()
+                    val score = "score " + String.format("%.2f", d.score) + " (threshold " + String.format("%.2f", th) + ")"
+                    wakeDetected(score)
                 }
             }
             engine.start()
@@ -133,7 +150,54 @@ class VoiceService : Service() {
         }
     }
 
+    /** Keyword spotter: wakes on "Jarvis" and "Hey Jarvis". False if it can't run on this phone. */
+    private fun startKws(): Boolean {
+        if (kwsFailed) return false
+        try {
+            val k = kws ?: KwsWake(this) { word -> wakeDetected("heard " + word.replace('_', ' ').lowercase()) }
+            kws = k
+            k.start()
+            brain.wakePhrase = "Jarvis"
+            mode = Mode.WAKE
+            modeName = "waiting for \"Jarvis\" or \"Hey Jarvis\""
+            return true
+        } catch (e: Throwable) {
+            // Don't try again this run: use the "Hey Jarvis" model from now on.
+            kwsFailed = true
+            try { kws?.release() } catch (t: Throwable) {}
+            kws = null
+            debug = "Keyword spotter could not start (" + e.javaClass.simpleName + "), using the Hey Jarvis model"
+            return false
+        }
+    }
+
+    /** Either wake engine heard the name. [what] is shown on the setup screen for debugging. */
+    private fun wakeDetected(what: String) {
+        if (hearingOwnVoice()) {
+            lastWake = "Ignored wake while Jarvis was speaking: $what"
+        } else {
+            lastWake = "Last wake: $what"
+            onWakeHeard()
+        }
+    }
+
+    /** True while Jarvis is talking or has only just stopped (it says "Hey Jarvis" in some replies). */
+    private fun hearingOwnVoice(): Boolean =
+        speaker.busy || android.os.SystemClock.elapsedRealtime() - speaker.lastDoneAt < SELF_VOICE_MS
+
+    /** Starts the wake word only once Jarvis has finished talking. */
+    private fun startWakeWhenQuiet() {
+        if (mode != Mode.WAKE || !running) return
+        if (speaker.busy || brain.busy) {
+            main.postDelayed({ startWakeWhenQuiet() }, 300)
+            return
+        }
+        startWake()
+    }
+
     private fun stopWake(release: Boolean) {
+        // The keyword spotter always frees the microphone; its model stays loaded for next time.
+        try { kws?.stop() } catch (e: Throwable) {}
         try { wake?.stop() } catch (e: Throwable) {}
         if (release) {
             try { wakeJob?.cancel() } catch (e: Throwable) {}
@@ -156,6 +220,7 @@ class VoiceService : Service() {
         if (mode != Mode.WAKE) return
         mode = Mode.SESSION
         silentTurns = 0
+        handledInSession = false
         // Fully release the wake word's microphone: two recorders at once can leave the recogniser deaf.
         stopWake(release = true)
         beep(true)
@@ -172,7 +237,8 @@ class VoiceService : Service() {
         listening = false
         beep(false)
         mode = Mode.WAKE
-        main.postDelayed({ if (mode == Mode.WAKE && running) startWake() }, 600)
+        modeName = "waiting for \"" + brain.wakePhrase + "\""
+        main.postDelayed({ startWakeWhenQuiet() }, 600)
     }
 
     private fun beep(start: Boolean) {
@@ -185,12 +251,13 @@ class VoiceService : Service() {
 
     private fun startInForeground() {
         val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        nm.createNotificationChannel(NotificationChannel("nova", "Jarvis", NotificationManager.IMPORTANCE_LOW))
-        val n = Notification.Builder(this, "nova")
+        nm.createNotificationChannel(NotificationChannel("jarvis", "Jarvis", NotificationManager.IMPORTANCE_LOW))
+        val n = Notification.Builder(this, "jarvis")
             .setContentTitle("Jarvis is listening")
             .setContentText("Waiting for the wake phrase")
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .setOngoing(true)
+            .setContentIntent(SetupNotice.openJarvis(this)) // tap to open the Jarvis settings screen
             .build()
         if (Build.VERSION.SDK_INT >= 29) {
             startForeground(1, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
@@ -217,6 +284,11 @@ class VoiceService : Service() {
 
     private fun maybeListen() {
         if (!running || mode == Mode.WAKE || listening || speaker.busy || brain.busy) return
+        // One command per wake: go back to waiting for the name unless Jarvis asked a question.
+        if (mode == Mode.SESSION && handledInSession && !brain.awaitingAnswer) {
+            endSession()
+            return
+        }
         listen()
     }
 
@@ -265,8 +337,7 @@ class VoiceService : Service() {
                 yarnFailures = 0
                 silentTurns = 0
                 debug = "Heard (YarnGPT): $text"
-                brain.heard(listOf(text), addressed = mode == Mode.SESSION)
-                maybeListen()
+                handle(listOf(text))
             }
 
             override fun onSilence() {
@@ -287,6 +358,20 @@ class VoiceService : Service() {
         })
         yarnEars = ears
         ears.start()
+    }
+
+    /** Passes what was heard to the brain, then listens again, waits for an answer, or ends the session. */
+    private fun handle(alts: List<String>) {
+        val inSession = mode == Mode.SESSION
+        // Set before heard(): the brain may call back into maybeListen() while handling it.
+        if (inSession) handledInSession = true
+        val acted = brain.heard(alts, addressed = inSession)
+        if (inSession && !acted) {
+            handledInSession = false
+            quietTurn()          // heard words but nothing to act on: treat like silence
+            return
+        }
+        maybeListen()
     }
 
     private fun resetRecognizer() {
@@ -362,8 +447,7 @@ class VoiceService : Service() {
             }
             silentTurns = 0
             debug = "Heard: " + list[0]
-            brain.heard(list, addressed = mode == Mode.SESSION)
-            maybeListen()
+            handle(list)
         }
     }
 }

@@ -1,4 +1,4 @@
-package ng.ainow.nova
+package ng.ainow.jarvis.speaking
 
 import android.content.Context
 import android.media.AudioAttributes
@@ -14,6 +14,12 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
+import ng.ainow.jarvis.BuildConfig
+import ng.ainow.jarvis.Prefs
+import ng.ainow.jarvis.ai.AiClient
+import ng.ainow.jarvis.language.LangDetect
+import ng.ainow.jarvis.language.Packs
+import ng.ainow.jarvis.listening.Yarn
 
 /**
  * Everything Jarvis says goes through here, one piece of text at a time, in order:
@@ -45,6 +51,11 @@ class Speaker(ctx: Context, private val onIdle: () -> Unit) {
     private var pending = 0                                     // main thread only
 
     val busy: Boolean get() = pending > 0
+
+    /** When speech last finished (elapsedRealtime). Lets the wake word ignore Jarvis's own voice. */
+    @Volatile
+    var lastDoneAt = 0L
+        private set
 
     private enum class Engine { PHONE, MMS, YARN }
     private class Seg(val text: String, val lang: String, val engine: Engine)
@@ -93,6 +104,7 @@ class Speaker(ctx: Context, private val onIdle: () -> Unit) {
             } finally {
                 main.post {
                     pending = maxOf(0, pending - 1)
+                    lastDoneAt = android.os.SystemClock.elapsedRealtime()
                     if (pending == 0) onIdle()
                 }
             }
@@ -250,7 +262,7 @@ class Speaker(ctx: Context, private val onIdle: () -> Unit) {
         val t = tts ?: return
         for (chunk in chunk(text, 800)) {
             if (g != gen) return
-            val id = "nova-" + System.nanoTime()
+            val id = "jarvis-" + System.nanoTime()
             val done = CountDownLatch(1)
             phoneDone[id] = done
             setLang(t, voiceTag(lang))

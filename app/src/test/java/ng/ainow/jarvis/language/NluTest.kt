@@ -1,8 +1,8 @@
-package ng.ainow.nova
+package ng.ainow.jarvis.language
 
+import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import java.io.File
 
 /** Commands in each language, including verb-last languages and ones written without spaces. */
 class NluTest {
@@ -45,5 +45,21 @@ class NluTest {
         check("ja", "画面を読んで", Cmd.Simple("read_screen"))
         check("ko", "뒤로", Cmd.Simple("back"))
         check("pl", "przeczytaj ekran", Cmd.Simple("read_screen"))
+    }
+
+    @Test fun open_then_search() {
+        check("en", "open google and search for song", Cmd.Arg("open", "google and search for song"))
+        assertEquals("google" to "search for song", Nlu.splitThen("google and search for song"))
+        assertEquals("youtube" to "search cats", Nlu.splitThen("youtube and then search cats"))
+        assertEquals(null, Nlu.splitThen("whatsapp"))
+        check("en", "search for song", Cmd.Arg("search", "song"))
+    }
+
+    @Test fun message_a_number() {
+        check("en", "send message to 470", Cmd.Arg("whatsapp", "470"))
+        check("en", "send a message to 0803 123 4567", Cmd.Arg("whatsapp", "0803 123 4567"))
+        check("en", "text 470", Cmd.Arg("whatsapp", "470"))
+        check("en", "send message to", Cmd.Arg("whatsapp", ""))
+        assertEquals(Cmd.Arg("whatsapp", "470"), Nlu.argument("whatsapp", "470", listOf(pack("en"))))
     }
 }

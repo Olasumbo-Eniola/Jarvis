@@ -1,5 +1,4 @@
-package ng.ainow.nova
-
+package ng.ainow.jarvis.language
 /** What the user asked for. */
 sealed class Cmd {
     data class Simple(val id: String) : Cmd()
@@ -16,7 +15,7 @@ object Nlu {
     private val VERB_LAST = setOf("ko", "ja", "hi", "tr")
     private val LOOSE = setOf("back", "home", "help", "yes", "no")
 
-    /** Removes "hey Nova" style call from the start. Returns (heardName, restOfSentence). */
+    /** Removes "hey Jarvis" style call from the start. Returns (heardName, restOfSentence). */
     fun stripWake(raw: String, wakeName: String): Pair<Boolean, String> {
         val tokens = raw.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
         val wake = Matcher.norm(wakeName)
@@ -160,6 +159,23 @@ object Nlu {
             }
             else -> Cmd.Arg(id, stripParticles(trimFillers(restNorm.split(" ").filter { it.isNotEmpty() }, f).joinToString(" ")))
         }
+    }
+
+    /** [raw] as the argument of command [id], cleaned the same way as "verb + argument". */
+    fun argument(id: String, raw: String, packs: List<Pack>): Cmd {
+        val tokens = raw.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
+        return build(id, Matcher.norm(raw), tokens, packs)
+    }
+
+    private val THEN = listOf(" and then ", " then ", " and ")
+
+    /** "google and search for song" -> ("google", "search for song"). Null if there is no second step. */
+    fun splitThen(arg: String): Pair<String, String>? {
+        for (sep in THEN) {
+            val i = arg.indexOf(sep)
+            if (i > 0 && i + sep.length < arg.length) return arg.substring(0, i).trim() to arg.substring(i + sep.length).trim()
+        }
+        return null
     }
 
     /** "second", "2", "dos" ... -> 2 */

@@ -1,4 +1,4 @@
-package ng.ainow.nova
+package ng.ainow.jarvis.ui
 
 import android.app.Activity
 import android.graphics.Typeface
@@ -19,6 +19,10 @@ import android.widget.ListView
 import android.widget.TextView
 import java.text.Normalizer
 import java.util.Locale
+import ng.ainow.jarvis.Prefs
+import ng.ainow.jarvis.language.Pack
+import ng.ainow.jarvis.language.Packs
+import ng.ainow.jarvis.speaking.Speaker
 
 /**
  * Full-screen language picker: a search box, then English and the Nigerian languages in their own

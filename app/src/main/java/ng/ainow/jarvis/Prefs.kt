@@ -1,10 +1,10 @@
-package ng.ainow.nova
+package ng.ainow.jarvis
 
 import android.content.Context
 
 /** Small settings store. Everything stays on the phone. */
 class Prefs(ctx: Context) {
-    private val sp = ctx.applicationContext.getSharedPreferences("nova", Context.MODE_PRIVATE)
+    private val sp = ctx.applicationContext.getSharedPreferences("jarvis", Context.MODE_PRIVATE)
 
     var lang: String
         get() = sp.getString("lang", "en") ?: "en"

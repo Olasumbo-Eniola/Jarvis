@@ -1,4 +1,4 @@
-package ng.ainow.nova
+package ng.ainow.jarvis.listening
 
 import android.annotation.SuppressLint
 import android.media.AudioFormat
@@ -6,6 +6,15 @@ import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.os.Handler
 import android.os.Looper
+import java.io.DataInputStream
+import java.io.DataOutputStream
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.security.MessageDigest
+import java.util.concurrent.TimeUnit
+import kotlin.math.sqrt
+import ng.ainow.jarvis.Prefs
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -15,14 +24,6 @@ import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import okio.ByteString.Companion.toByteString
 import org.json.JSONObject
-import java.io.DataInputStream
-import java.io.DataOutputStream
-import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
-import java.security.MessageDigest
-import java.util.concurrent.TimeUnit
-import kotlin.math.sqrt
 
 /**
  * YarnGPT (yarngpt.ai): Nigerian voices and speech recognition for English, Pidgin, Yorùbá,

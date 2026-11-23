@@ -1,4 +1,4 @@
-package ng.ainow.nova
+package ng.ainow.jarvis.ai
 
 import android.graphics.Bitmap
 import android.graphics.Rect
@@ -6,12 +6,13 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.util.Base64
-import org.json.JSONArray
-import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.Executors
+import ng.ainow.jarvis.Prefs
+import org.json.JSONArray
+import org.json.JSONObject
 
 /**
  * Google Gemini over plain HTTPS. Used ONLY when the rules and on-device OCR cannot do the job:
