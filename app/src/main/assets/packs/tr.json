@@ -1,0 +1,228 @@
+{
+  "code": "tr",
+  "name": "Türkçe",
+  "aliases": [
+    "türkçe",
+    "turkce",
+    "turkish"
+  ],
+  "stt": "tr-TR",
+  "tts": "tr-TR",
+  "phrases": {
+    "back": [
+      "geri",
+      "geri dön",
+      "önceki ekran"
+    ],
+    "home": [
+      "ana ekran",
+      "ana ekrana git",
+      "ana sayfa",
+      "eve dön"
+    ],
+    "recents": [
+      "son uygulamalar",
+      "son kullanılanlar",
+      "son uygulamaları göster"
+    ],
+    "notifications": [
+      "bildirimler",
+      "bildirimleri göster",
+      "bildirimleri aç",
+      "bildirimleri oku"
+    ],
+    "quick_settings": [
+      "hızlı ayarlar",
+      "hızlı ayarları aç"
+    ],
+    "read_screen": [
+      "ekranı oku",
+      "ekranda ne var",
+      "bunu oku"
+    ],
+    "read_buttons": [
+      "düğmeleri oku",
+      "düğmeleri listele",
+      "hangi düğmeler var",
+      "neye dokunabilirim"
+    ],
+    "scroll_down": [
+      "aşağı kaydır",
+      "aşağı",
+      "sonraki sayfa"
+    ],
+    "scroll_up": [
+      "yukarı kaydır",
+      "yukarı",
+      "önceki sayfa"
+    ],
+    "lock": [
+      "ekranı kilitle",
+      "telefonu kilitle"
+    ],
+    "volume_up": [
+      "sesi aç",
+      "sesi yükselt",
+      "daha yüksek"
+    ],
+    "volume_down": [
+      "sesi kıs",
+      "sesi azalt",
+      "daha alçak"
+    ],
+    "clear_text": [
+      "metni temizle",
+      "alanı temizle",
+      "bunu sil"
+    ],
+    "quit": [
+      "çık",
+      "dinlemeyi bırak",
+      "hoşça kal",
+      "kapan",
+      "güle güle"
+    ],
+    "help": [
+      "yardım",
+      "neler yapabilirsin",
+      "bana yardım et"
+    ],
+    "open_accessibility": [
+      "erişilebilirlik ayarlarını aç",
+      "erişilebilirlik ayarları"
+    ],
+    "open_app_settings": [
+      "uygulama ayarlarını aç",
+      "kısıtlı ayarlar"
+    ],
+    "yes": [
+      "evet",
+      "tabii",
+      "onayla",
+      "yap",
+      "olur",
+      "tamam"
+    ],
+    "no": [
+      "hayır",
+      "iptal",
+      "dur",
+      "vazgeç",
+      "boş ver"
+    ]
+  },
+  "verbs": {
+    "tap": [
+      "dokun",
+      "bas",
+      "tıkla",
+      "seç"
+    ],
+    "open": [
+      "aç",
+      "başlat",
+      "git"
+    ],
+    "call": [
+      "ara",
+      "telefon et"
+    ],
+    "whatsapp": [
+      "mesaj gönder",
+      "mesaj at",
+      "yaz",
+      "whatsapp"
+    ],
+    "search": [
+      "ara",
+      "internette ara",
+      "bul",
+      "araştır"
+    ],
+    "type": [
+      "yaz",
+      "gir",
+      "metin gir"
+    ],
+    "fill": [
+      "doldur",
+      "ayarla"
+    ],
+    "language": [
+      "dili değiştir",
+      "dil",
+      "konuş"
+    ]
+  },
+  "fillers": [
+    "düğme",
+    "düğmesine",
+    "lütfen",
+    "benim",
+    "kişi",
+    "uygulama",
+    "uygulamasını",
+    "alan",
+    "alanına"
+  ],
+  "with": [
+    "ile",
+    "olarak"
+  ],
+  "risky": [
+    "gönder",
+    "sil",
+    "kaldır",
+    "öde",
+    "satın al",
+    "sipariş",
+    "onayla",
+    "yayınla",
+    "aktar",
+    "havale",
+    "çıkış yap",
+    "oturumu kapat",
+    "sıfırla",
+    "engelle"
+  ],
+  "ordinals": [
+    "birinci|ilk|bir|1.",
+    "ikinci|iki|2.",
+    "üçüncü|üç|3.",
+    "dördüncü|dört|4.",
+    "beşinci|beş|5."
+  ],
+  "say": {
+    "here": "Efendim?",
+    "welcome": "Merhaba, ben Jarvis, sesli asistanınız. %s deyin, bip sesini bekleyin, sonra bana bir şey sorun. Ekranı okuyabilir, düğmelere basabilir, form doldurabilir, uygulama açabilir, birilerini arayabilir ve soruları yanıtlayabilirim. İstediğiniz zaman yardım deyin.",
+    "setup_hint": "Önce erişilebilirlik ayarlarında açılmam gerekiyor. Erişilebilirlik ayarlarını aç deyin, listede Jarvis'i bulun ve açın. Anahtar açılmazsa uygulama ayarlarını aç deyin, sağ üstteki üç noktaya dokunun, kısıtlı ayarlara izin ver'i seçin ve tekrar deneyin.",
+    "ok": "Tamam.",
+    "notfound": "%s bulunamadı.",
+    "confirm": "%s dokunulsun mu? Evet ya da hayır deyin.",
+    "confirm_call": "%s aransın mı? Evet ya da hayır deyin.",
+    "tapfail": "Dokunma işe yaramadı.",
+    "disabled": "%s devre dışı, basılamıyor.",
+    "choose": "%2$s için %1$d sonuç buldum. Birinci, ikinci diye söyleyin.",
+    "noservice": "Lütfen erişilebilirlik ayarlarında Jarvis'i açın.",
+    "nocontacts": "Kişilerinizi okumak için izne ihtiyacım var.",
+    "contact_missing": "%s adında bir kişi bulunamadı.",
+    "app_missing": "%s adında bir uygulama bulunamadı.",
+    "opening": "%s açılıyor.",
+    "field_missing": "%s adında bir alan bulunamadı.",
+    "no_input": "Önce bir metin alanına dokunun.",
+    "no_screenshot": "Bu ekranın görüntüsü alınamadı.",
+    "notunderstood": "Üzgünüm, anlamadım.",
+    "ai_error": "Yapay zekâ hizmeti yanıt vermiyor. Daha sonra tekrar deneyin.",
+    "switched": "Artık %s konuşuyorum.",
+    "lang_missing": "%s adında bir dilim yok.",
+    "bye": "Hoşça kalın.",
+    "empty_screen": "Bu ekranda hiçbir şey göremiyorum.",
+    "buttons": "Düğmeler:",
+    "unlabeled": "%d düğmenin adı yok.",
+    "need_arg": "Bir adla tekrar söyleyin.",
+    "openfail": "Bunu açamadım.",
+    "help": "Şunları diyebilirsiniz: geri, ana ekran, ekranı oku, düğmeleri oku, dokun ve düğme adı, aç ve uygulama adı, ara veya mesaj gönder ve kişi adı, internette ara, yaz ya da dili değiştir.",
+    "prompt": "Dinliyorum. Ne yapmamı istersiniz?",
+    "idle_bye": "Tamam, buradayım. İhtiyacınız olunca %s deyin."
+  }
+}

@@ -15,25 +15,51 @@ import android.provider.ContactsContract
 import org.json.JSONObject
 import java.net.URLEncoder
 
+/** Nigerian packs whose commands are always understood, for code-switching. */
+private val NIGERIAN = listOf("pcm", "yo", "ig", "ha")
+
 /**
  * Decides what to do with what the user said. Order of preference:
  *   1. rule-based commands from the language pack  (free, instant, offline)
  *   2. on-device OCR for buttons the screen reader cannot name  (free, offline)
- *   3. Gemini, only for chat, strange sentences and naming icons  (needs key + consent)
+ *   3. Gemini, only for chat, strange sentences and naming icons  (needs the built-in key)
  * Everything runs on the main thread.
  */
 class Brain(
     private val ctx: Context,
     private val prefs: Prefs,
-    private val speak: (String) -> Unit
+    /** Says text. The second value is the language code, or null to detect it per sentence. */
+    private val output: (String, String?) -> Unit
 ) {
     private val main = Handler(Looper.getMainLooper())
     private val ai = AiClient(prefs)
     private val ocr = Ocr()
     private val en: Pack = Packs.load(ctx, "en")
-    var pack: Pack = Packs.load(ctx, prefs.lang)
-        private set
-    private val packs: List<Pack> get() = if (pack.code == "en") listOf(en) else listOf(pack, en)
+    /** Read fresh each time so a language picked on the setup screen applies straight away. */
+    val pack: Pack get() = Packs.load(ctx, prefs.lang)
+    /**
+     * Command words to understand: the chosen language first, then English, then the other Nigerian
+     * languages, so a sentence that mixes them (code-switching) still matches. Replies stay in the
+     * chosen language.
+     */
+    private val packs: List<Pack>
+        get() = (listOf(replyPack, pack, en) + NIGERIAN.map { Packs.load(ctx, it) }).distinctBy { it.code }
+
+    /**
+     * The language the user is speaking right now. Jarvis answers in it: speak Yorùbá and it replies
+     * in Yorùbá, switch to English and it switches too. Cleared when a conversation ends, so each new
+     * one starts in the language chosen on the setup screen.
+     */
+    private var spokenLang: String? = null
+    val replyPack: Pack get() = Packs.load(ctx, spokenLang ?: prefs.lang)
+
+    fun endConversation() { spokenLang = null }
+
+    /** Jarvis's own words, in the language of the conversation. */
+    private fun speak(text: String) = output(text, replyPack.code)
+
+    /** Text from the screen: each sentence is read in the language it is written in. */
+    private fun read(text: String) = output(text, null)
 
     var onSettled: (() -> Unit)? = null
     var onQuit: (() -> Unit)? = null
@@ -55,7 +81,7 @@ class Brain(
     }
 
     private fun t(key: String, vararg a: Any): String {
-        val s = pack.say[key] ?: en.say[key] ?: key
+        val s = replyPack.say[key] ?: en.say[key] ?: key
         return if (a.isEmpty()) s else String.format(s, *a)
     }
 
@@ -87,6 +113,9 @@ class Brain(
         val now = SystemClock.elapsedRealtime()
         // [addressed] = the wake word engine already heard the call, so no name is needed in the sentence.
         val cands = alts.map { Nlu.stripWake(it, prefs.wakeName) }.map { Pair(it.first || addressed, it.second) }
+
+        // Reply in the language the user just spoke (a Yorùbá/English mix counts as Yorùbá).
+        cands.firstOrNull()?.second?.let { LangDetect.quick(it) }?.let { spokenLang = it }
 
         // Waiting for "yes/no" or "first/second"?
         if (pendingYes != null || pendingChoice != null) {
@@ -214,17 +243,20 @@ class Brain(
 
     private fun readScreen(svc: NovaAccessibilityService) {
         val scr = svc.scan()
-        if (scr.texts.isEmpty()) say("empty_screen") else speak(scr.texts.joinToString(". "))
+        if (scr.texts.isEmpty()) say("empty_screen") else read(scr.texts.joinToString(". "))
     }
 
     private fun readButtons(svc: NovaAccessibilityService) {
         val scr = svc.scan()
         val names = scr.controls.filter { !it.unlabeled && it.label.isNotBlank() }.map { it.label }.distinct().take(25)
         val unl = scr.controls.count { it.unlabeled }
-        val sb = StringBuilder()
-        if (names.isNotEmpty()) sb.append(t("buttons")).append(' ').append(names.joinToString(", ")).append('.')
-        if (unl > 0) sb.append(' ').append(t("unlabeled", unl))
-        if (sb.isEmpty()) say("empty_screen") else speak(sb.toString().trim())
+        if (names.isEmpty() && unl == 0) { say("empty_screen"); return }
+        // "Buttons:" in the conversation's language, then each name in its own language.
+        if (names.isNotEmpty()) {
+            say("buttons")
+            read(names.joinToString(". ") + ".")
+        }
+        if (unl > 0) say("unlabeled", unl)
     }
 
     // ------------------------------------------------------------------ commands with an argument
@@ -382,7 +414,7 @@ class Brain(
     }
 
     /**
-     * Last resorts, only with consent and never on a screen showing a password:
+     * Last resorts, only with the built-in key and never on a screen showing a password:
      *  1. name the unlabeled icon buttons from their pictures,
      *  2. otherwise show Gemini the whole screenshot and ask where the control is.
      */
@@ -429,7 +461,22 @@ class Brain(
         val svc = NovaAccessibilityService.inst
         if (svc == null) { say("noservice"); return }
         val f = svc.focusedInput()
-        if (f == null) say("no_input") else svc.setText(f, spoken(value))
+        if (f == null) say("no_input") else withTones(spoken(value)) { svc.setText(f, it) }
+    }
+
+    /**
+     * Dictated Yorùbá/Igbo/Hausa: YarnGPT already writes most tone marks; Gemini fixes the rest
+     * (and word breaks such as "ẹjọ́" -> "Ẹ jọ̀ọ́") before typing. Offline or with AI off, the text
+     * is typed as heard.
+     */
+    private fun withTones(text: String, then: (String) -> Unit) {
+        val lang = LangDetect.quick(text)
+        if (lang !in setOf(LangDetect.YO, LangDetect.IG, LangDetect.HA) || !prefs.aiAllowed) { then(text); return }
+        begin()
+        Thread({
+            val fixed = ai.restoreTonesSync(listOf(text), listOf(lang!!), 6000)?.firstOrNull()?.takeIf { it.isNotBlank() } ?: text
+            main.post { then(fixed); end() }
+        }, "tones").start()
     }
 
     private fun fill(field: String, value: String) {
@@ -439,7 +486,7 @@ class Brain(
         val inputs = svc.scan().controls.filter { it.editable }
         val best = inputs.map { it to Matcher.score(field, it.label) }.filter { it.second >= 0.5 }.maxByOrNull { it.second }?.first
             ?: if (inputs.size == 1) inputs[0] else null
-        if (best == null) say("field_missing", field) else svc.setText(best.node, spoken(value))
+        if (best == null) say("field_missing", field) else withTones(spoken(value)) { svc.setText(best.node, it) }
     }
 
     /** "john at gmail dot com" -> "john@gmail.com" */
@@ -534,7 +581,7 @@ class Brain(
             val p = Packs.load(ctx, code)
             if ((p.aliases + p.name + p.code).any { Matcher.norm(it) == n }) {
                 prefs.lang = code
-                pack = p
+                spokenLang = code
                 speak(p.say["switched"]?.let { String.format(it, p.name) } ?: p.name)
                 return
             }
@@ -554,7 +601,7 @@ class Brain(
         val labels = if (scr == null || scr.hasPassword) emptyList()
         else scr.controls.map { it.label }.filter { it.isNotBlank() }.distinct().take(40)
         begin()
-        ai.interpret(text, pack.name, labels) { r ->
+        ai.interpret(text, replyPack.name, labels) { r ->
             if (!r.ok) {
                 say("ai_error")
             } else {
@@ -582,7 +629,7 @@ class Brain(
                     val q = o.optString("query")
                     if (q.isBlank()) say("notunderstood") else {
                         begin()
-                        ai.answer(q, pack.name) { r ->
+                        ai.answer(q, replyPack.name) { r ->
                             if (r.ok) speak(r.text) else say("ai_error")
                             end()
                         }

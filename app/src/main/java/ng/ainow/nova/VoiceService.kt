@@ -55,6 +55,8 @@ class VoiceService : Service() {
     private lateinit var speaker: Speaker
     private lateinit var brain: Brain
     private var rec: SpeechRecognizer? = null
+    private var yarnEars: Yarn.Listener? = null
+    private var yarnFailures = 0
     private var listening = false
     private var sttFallback = false
     private var muted = false
@@ -73,7 +75,7 @@ class VoiceService : Service() {
         prefs = Prefs(this)
         startInForeground()
         speaker = Speaker(this) { maybeListen() }
-        brain = Brain(this, prefs) { text -> speaker.speak(text, brain.pack.tts) }
+        brain = Brain(this, prefs) { text, lang -> speaker.speak(text, lang) }
         brain.onSettled = { maybeListen() }
         brain.onQuit = { main.postDelayed({ stopSelf() }, 1500) }
         running = true
@@ -92,6 +94,8 @@ class VoiceService : Service() {
         stopWake(release = true)
         try { rec?.destroy() } catch (e: Exception) {}
         rec = null
+        yarnEars?.cancel()
+        yarnEars = null
         try { tone?.release() } catch (e: Exception) {}
         speaker.shutdown()
         quiet(false)
@@ -161,6 +165,10 @@ class VoiceService : Service() {
     private fun endSession() {
         if (mode != Mode.SESSION) return
         try { rec?.cancel() } catch (e: Exception) {}
+        yarnEars?.cancel()
+        yarnEars = null
+        yarnFailures = 0 // try YarnGPT again next time
+        brain.endConversation()
         listening = false
         beep(false)
         mode = Mode.WAKE
@@ -217,6 +225,12 @@ class VoiceService : Service() {
             stopSelf()
             return
         }
+        // After "Hey Jarvis": YarnGPT hears all five Nigerian languages, even mixed in one sentence.
+        // Not used in the always-listening fallback mode, where it would stream (and bill) all day.
+        if (mode == Mode.SESSION && Yarn.allowed(prefs) && yarnFailures < 2) {
+            yarnListen()
+            return
+        }
         if (!SpeechRecognizer.isRecognitionAvailable(this)) {
             speaker.speak("Speech recognition is not available on this phone.", "en-US")
             main.postDelayed({ stopSelf() }, 3000)
@@ -240,6 +254,39 @@ class VoiceService : Service() {
             resetRecognizer()
             retryIn(1000)
         }
+    }
+
+    private fun yarnListen() {
+        listening = true
+        val ears = Yarn.Listener(prefs.yarnKey, object : Yarn.Ears {
+            override fun onText(text: String) {
+                listening = false
+                yarnEars = null
+                yarnFailures = 0
+                silentTurns = 0
+                debug = "Heard (YarnGPT): $text"
+                brain.heard(listOf(text), addressed = mode == Mode.SESSION)
+                maybeListen()
+            }
+
+            override fun onSilence() {
+                listening = false
+                yarnEars = null
+                yarnFailures = 0
+                quietTurn()
+            }
+
+            override fun onFailed(why: String) {
+                listening = false
+                yarnEars = null
+                yarnFailures++
+                debug = "YarnGPT listening failed: $why"
+                // Two failures in a row (no internet, out of credit): use the phone's recogniser.
+                retryIn(300)
+            }
+        })
+        yarnEars = ears
+        ears.start()
     }
 
     private fun resetRecognizer() {

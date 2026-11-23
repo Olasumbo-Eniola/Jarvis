@@ -14,14 +14,15 @@ class Prefs(ctx: Context) {
         get() = sp.getString("wakeName", "Jarvis") ?: "Jarvis"
         set(v) { sp.edit().putString("wakeName", v.trim().ifEmpty { "Jarvis" }).apply() }
 
-    var aiKey: String
-        get() = sp.getString("aiKey", "") ?: ""
-        set(v) { sp.edit().putString("aiKey", v.trim()).apply() }
+    /** Built into the app from local.properties, so users never have to get or type a key. */
+    val aiKey: String get() = BuildConfig.GEMINI_API_KEY.trim()
 
-    /** The user must agree before button names or icon pictures are sent to Gemini. */
-    var aiConsent: Boolean
-        get() = sp.getBoolean("aiConsent", false)
-        set(v) { sp.edit().putBoolean("aiConsent", v).apply() }
+    val yarnKey: String get() = BuildConfig.YARNGPT_API_KEY.trim()
+
+    /** The user must agree before their voice is sent to YarnGPT. */
+    var yarnConsent: Boolean
+        get() = sp.getBoolean("yarnConsent", false)
+        set(v) { sp.edit().putBoolean("yarnConsent", v).apply() }
 
     var confirmAll: Boolean
         get() = sp.getBoolean("confirmAll", false)
@@ -49,5 +50,6 @@ class Prefs(ctx: Context) {
         get() = sp.getBoolean("onboarded", false)
         set(v) { sp.edit().putBoolean("onboarded", v).apply() }
 
-    val aiAllowed: Boolean get() = aiKey.isNotBlank() && aiConsent
+    /** Gemini is on whenever the builders shipped a key; the setup screen shows a data notice instead of asking. */
+    val aiAllowed: Boolean get() = aiKey.isNotBlank()
 }

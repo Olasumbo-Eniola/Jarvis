@@ -1,0 +1,248 @@
+{
+  "code": "it",
+  "name": "Italiano",
+  "aliases": [
+    "italiano",
+    "italian",
+    "italiana"
+  ],
+  "stt": "it-IT",
+  "tts": "it-IT",
+  "phrases": {
+    "back": [
+      "indietro",
+      "torna indietro",
+      "vai indietro",
+      "schermata precedente"
+    ],
+    "home": [
+      "home",
+      "vai alla home",
+      "schermata home",
+      "torna alla home",
+      "pagina iniziale"
+    ],
+    "recents": [
+      "app recenti",
+      "recenti",
+      "mostra app recenti"
+    ],
+    "notifications": [
+      "notifiche",
+      "mostra notifiche",
+      "apri notifiche",
+      "leggi notifiche"
+    ],
+    "quick_settings": [
+      "impostazioni rapide",
+      "apri impostazioni rapide"
+    ],
+    "read_screen": [
+      "leggi lo schermo",
+      "leggi schermo",
+      "cosa c'è sullo schermo",
+      "leggi questo"
+    ],
+    "read_buttons": [
+      "leggi i pulsanti",
+      "elenca i pulsanti",
+      "quali pulsanti ci sono",
+      "cosa posso toccare"
+    ],
+    "scroll_down": [
+      "scorri giù",
+      "scorri in basso",
+      "vai giù",
+      "pagina successiva"
+    ],
+    "scroll_up": [
+      "scorri su",
+      "scorri in alto",
+      "vai su",
+      "pagina precedente"
+    ],
+    "lock": [
+      "blocca lo schermo",
+      "blocca il telefono",
+      "blocca schermo"
+    ],
+    "volume_up": [
+      "alza il volume",
+      "volume su",
+      "più forte"
+    ],
+    "volume_down": [
+      "abbassa il volume",
+      "volume giù",
+      "più piano"
+    ],
+    "clear_text": [
+      "cancella il testo",
+      "svuota il campo",
+      "cancella questo"
+    ],
+    "quit": [
+      "esci",
+      "smetti di ascoltare",
+      "arrivederci",
+      "spegniti",
+      "basta"
+    ],
+    "help": [
+      "aiuto",
+      "cosa sai fare",
+      "aiutami"
+    ],
+    "open_accessibility": [
+      "apri impostazioni accessibilità",
+      "impostazioni accessibilità"
+    ],
+    "open_app_settings": [
+      "apri impostazioni app",
+      "impostazioni con restrizioni"
+    ],
+    "yes": [
+      "sì",
+      "si",
+      "certo",
+      "conferma",
+      "fallo",
+      "vai pure",
+      "va bene"
+    ],
+    "no": [
+      "no",
+      "annulla",
+      "stop",
+      "lascia stare",
+      "niente"
+    ]
+  },
+  "verbs": {
+    "tap": [
+      "tocca",
+      "premi",
+      "clicca su",
+      "clicca",
+      "seleziona",
+      "attiva"
+    ],
+    "open": [
+      "apri",
+      "avvia",
+      "vai su",
+      "vai a"
+    ],
+    "call": [
+      "chiama",
+      "telefona a"
+    ],
+    "whatsapp": [
+      "manda un messaggio a",
+      "scrivi a",
+      "messaggio a",
+      "whatsapp"
+    ],
+    "search": [
+      "cerca",
+      "cerca su google",
+      "trova"
+    ],
+    "type": [
+      "scrivi",
+      "digita",
+      "inserisci testo"
+    ],
+    "fill": [
+      "compila",
+      "riempi",
+      "imposta"
+    ],
+    "language": [
+      "passa alla lingua",
+      "cambia lingua in",
+      "parla"
+    ]
+  },
+  "fillers": [
+    "il",
+    "lo",
+    "la",
+    "i",
+    "gli",
+    "le",
+    "un",
+    "una",
+    "pulsante",
+    "per favore",
+    "su",
+    "a",
+    "mio",
+    "mia",
+    "contatto",
+    "app",
+    "campo"
+  ],
+  "with": [
+    "con",
+    "come"
+  ],
+  "risky": [
+    "invia",
+    "elimina",
+    "rimuovi",
+    "paga",
+    "compra",
+    "acquista",
+    "conferma",
+    "pubblica",
+    "trasferisci",
+    "ordina",
+    "esci dall'account",
+    "disconnetti",
+    "disinstalla",
+    "ripristina",
+    "cancella",
+    "blocca"
+  ],
+  "ordinals": [
+    "primo|prima|uno|1°",
+    "secondo|seconda|due|2°",
+    "terzo|terza|tre|3°",
+    "quarto|quarta|quattro|4°",
+    "quinto|quinta|cinque|5°"
+  ],
+  "say": {
+    "here": "Sì?",
+    "welcome": "Ciao, sono Jarvis, il tuo assistente vocale. Di' %s, aspetta il segnale acustico, poi chiedimi qualcosa. Posso leggere lo schermo, premere pulsanti, compilare moduli, aprire app, chiamare persone e rispondere a domande. Di' aiuto in qualsiasi momento.",
+    "setup_hint": "Prima devo essere attivato nelle impostazioni di accessibilità. Di' apri impostazioni accessibilità, trova Jarvis nell'elenco e attivalo. Se l'interruttore non si attiva, di' apri impostazioni app, tocca i tre puntini in alto a destra e scegli consenti impostazioni con restrizioni, poi riprova.",
+    "ok": "Va bene.",
+    "notfound": "Non ho trovato %s.",
+    "confirm": "Toccare %s? Di' sì o no.",
+    "confirm_call": "Chiamare %s? Di' sì o no.",
+    "tapfail": "Il tocco non ha funzionato.",
+    "disabled": "%s è disattivato, quindi non si può premere.",
+    "choose": "Ho trovato %d risultati per %s. Di' primo, secondo e così via.",
+    "noservice": "Attiva Jarvis nelle impostazioni di accessibilità.",
+    "nocontacts": "Ho bisogno del permesso per leggere i tuoi contatti.",
+    "contact_missing": "Non ho trovato un contatto chiamato %s.",
+    "app_missing": "Non ho trovato un'app chiamata %s.",
+    "opening": "Apro %s.",
+    "field_missing": "Non ho trovato un campo chiamato %s.",
+    "no_input": "Tocca prima un campo di testo.",
+    "no_screenshot": "Non sono riuscito a catturare questa schermata.",
+    "notunderstood": "Scusa, non ho capito.",
+    "ai_error": "Il servizio di intelligenza artificiale non risponde. Riprova più tardi.",
+    "switched": "Ora parlo %s.",
+    "lang_missing": "Non ho una lingua chiamata %s.",
+    "bye": "Arrivederci.",
+    "empty_screen": "Non vedo niente su questo schermo.",
+    "buttons": "Pulsanti:",
+    "unlabeled": "%d pulsanti non hanno un nome.",
+    "need_arg": "Ripetilo con un nome.",
+    "openfail": "Non sono riuscito ad aprirlo.",
+    "help": "Puoi dire: indietro, home, leggi lo schermo, leggi i pulsanti, tocca seguito dal nome di un pulsante, apri seguito dal nome di un'app, chiama o manda un messaggio a seguito da un contatto, cerca, scrivi, oppure cambia lingua.",
+    "prompt": "Ti ascolto. Cosa vuoi fare?",
+    "idle_bye": "Va bene, sono qui. Di' %s quando hai bisogno di me."
+  }
+}

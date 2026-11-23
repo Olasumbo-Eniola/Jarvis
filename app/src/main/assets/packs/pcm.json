@@ -3,7 +3,7 @@
   "name": "Naija Pidgin",
   "aliases": ["pidgin", "naija pidgin", "naija", "pigin"],
   "stt": "en-NG",
-  "tts": "en-NG",
+  "tts": "pcm-NG",
   "phrases": {
     "back": ["go back", "waka go back", "comot for here"],
     "home": ["go home", "waka go house", "house"],

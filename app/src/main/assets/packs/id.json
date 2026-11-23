@@ -1,0 +1,234 @@
+{
+  "code": "id",
+  "name": "Bahasa Indonesia",
+  "aliases": [
+    "bahasa indonesia",
+    "indonesia",
+    "indonesian"
+  ],
+  "stt": "id-ID",
+  "tts": "id-ID",
+  "phrases": {
+    "back": [
+      "kembali",
+      "mundur",
+      "layar sebelumnya"
+    ],
+    "home": [
+      "beranda",
+      "layar utama",
+      "ke beranda",
+      "kembali ke beranda",
+      "halaman utama"
+    ],
+    "recents": [
+      "aplikasi terbaru",
+      "terbaru",
+      "tampilkan aplikasi terbaru"
+    ],
+    "notifications": [
+      "notifikasi",
+      "tampilkan notifikasi",
+      "buka notifikasi",
+      "bacakan notifikasi"
+    ],
+    "quick_settings": [
+      "setelan cepat",
+      "buka setelan cepat"
+    ],
+    "read_screen": [
+      "bacakan layar",
+      "baca layar",
+      "apa yang ada di layar",
+      "bacakan ini"
+    ],
+    "read_buttons": [
+      "bacakan tombol",
+      "daftar tombol",
+      "ada tombol apa saja",
+      "apa yang bisa saya ketuk"
+    ],
+    "scroll_down": [
+      "gulir ke bawah",
+      "ke bawah",
+      "halaman berikutnya"
+    ],
+    "scroll_up": [
+      "gulir ke atas",
+      "ke atas",
+      "halaman sebelumnya"
+    ],
+    "lock": [
+      "kunci layar",
+      "kunci ponsel"
+    ],
+    "volume_up": [
+      "keraskan suara",
+      "naikkan volume",
+      "lebih keras"
+    ],
+    "volume_down": [
+      "kecilkan suara",
+      "turunkan volume",
+      "lebih pelan"
+    ],
+    "clear_text": [
+      "hapus teks",
+      "kosongkan kolom",
+      "hapus ini"
+    ],
+    "quit": [
+      "keluar",
+      "berhenti mendengarkan",
+      "selamat tinggal",
+      "matikan",
+      "dadah"
+    ],
+    "help": [
+      "bantuan",
+      "apa yang bisa kamu lakukan",
+      "tolong bantu"
+    ],
+    "open_accessibility": [
+      "buka setelan aksesibilitas",
+      "setelan aksesibilitas"
+    ],
+    "open_app_settings": [
+      "buka setelan aplikasi",
+      "setelan terbatas"
+    ],
+    "yes": [
+      "ya",
+      "iya",
+      "boleh",
+      "konfirmasi",
+      "lakukan",
+      "lanjut",
+      "oke"
+    ],
+    "no": [
+      "tidak",
+      "nggak",
+      "batal",
+      "berhenti",
+      "tidak jadi"
+    ]
+  },
+  "verbs": {
+    "tap": [
+      "ketuk",
+      "tekan",
+      "klik",
+      "pilih"
+    ],
+    "open": [
+      "buka",
+      "jalankan",
+      "mulai",
+      "pergi ke"
+    ],
+    "call": [
+      "telepon",
+      "hubungi",
+      "panggil"
+    ],
+    "whatsapp": [
+      "kirim pesan ke",
+      "pesan ke",
+      "chat",
+      "whatsapp"
+    ],
+    "search": [
+      "cari",
+      "cari tahu",
+      "googling",
+      "temukan"
+    ],
+    "type": [
+      "ketik",
+      "tulis",
+      "masukkan teks"
+    ],
+    "fill": [
+      "isi",
+      "isikan",
+      "atur"
+    ],
+    "language": [
+      "ganti bahasa ke",
+      "ubah bahasa ke",
+      "bicara bahasa"
+    ]
+  },
+  "fillers": [
+    "tombol",
+    "tolong",
+    "di",
+    "ke",
+    "saya",
+    "kontak",
+    "aplikasi",
+    "kolom",
+    "yang"
+  ],
+  "with": [
+    "dengan",
+    "sebagai"
+  ],
+  "risky": [
+    "kirim",
+    "hapus",
+    "bayar",
+    "beli",
+    "pesan sekarang",
+    "konfirmasi",
+    "terbitkan",
+    "posting",
+    "transfer",
+    "keluar akun",
+    "logout",
+    "copot",
+    "setel ulang",
+    "blokir"
+  ],
+  "ordinals": [
+    "pertama|satu|ke-1",
+    "kedua|dua|ke-2",
+    "ketiga|tiga|ke-3",
+    "keempat|empat|ke-4",
+    "kelima|lima|ke-5"
+  ],
+  "say": {
+    "here": "Ya?",
+    "welcome": "Halo, saya Jarvis, asisten suara Anda. Ucapkan %s, tunggu bunyi bip, lalu tanyakan sesuatu. Saya bisa membacakan layar, menekan tombol, mengisi formulir, membuka aplikasi, menelepon orang dan menjawab pertanyaan. Ucapkan bantuan kapan saja.",
+    "setup_hint": "Pertama, saya perlu diaktifkan di setelan aksesibilitas. Ucapkan buka setelan aksesibilitas, cari Jarvis di daftar dan aktifkan. Jika tombolnya tidak mau aktif, ucapkan buka setelan aplikasi, ketuk tiga titik di kanan atas, pilih izinkan setelan terbatas, lalu coba lagi.",
+    "ok": "Oke.",
+    "notfound": "Saya tidak menemukan %s.",
+    "confirm": "Ketuk %s? Ucapkan ya atau tidak.",
+    "confirm_call": "Telepon %s? Ucapkan ya atau tidak.",
+    "tapfail": "Ketukan itu tidak berhasil.",
+    "disabled": "%s tidak aktif, jadi tidak bisa ditekan.",
+    "choose": "Saya menemukan %d hasil untuk %s. Ucapkan pertama, kedua, dan seterusnya.",
+    "noservice": "Aktifkan Jarvis di setelan aksesibilitas.",
+    "nocontacts": "Saya perlu izin untuk membaca kontak Anda.",
+    "contact_missing": "Saya tidak menemukan kontak bernama %s.",
+    "app_missing": "Saya tidak menemukan aplikasi bernama %s.",
+    "opening": "Membuka %s.",
+    "field_missing": "Saya tidak menemukan kolom bernama %s.",
+    "no_input": "Ketuk kolom teks terlebih dahulu.",
+    "no_screenshot": "Saya tidak bisa mengambil tangkapan layar ini.",
+    "notunderstood": "Maaf, saya tidak mengerti.",
+    "ai_error": "Layanan AI tidak menjawab. Coba lagi nanti.",
+    "switched": "Sekarang berbicara %s.",
+    "lang_missing": "Saya tidak punya bahasa bernama %s.",
+    "bye": "Sampai jumpa.",
+    "empty_screen": "Saya tidak melihat apa pun di layar ini.",
+    "buttons": "Tombol:",
+    "unlabeled": "%d tombol tidak punya nama.",
+    "need_arg": "Ulangi dengan sebuah nama.",
+    "openfail": "Saya tidak bisa membukanya.",
+    "help": "Anda bisa mengucapkan: kembali, beranda, bacakan layar, bacakan tombol, ketuk lalu nama tombol, buka lalu nama aplikasi, telepon atau kirim pesan ke lalu nama kontak, cari, ketik, atau ganti bahasa.",
+    "prompt": "Saya mendengarkan. Mau apa?",
+    "idle_bye": "Oke, saya di sini. Ucapkan %s kalau perlu saya."
+  }
+}

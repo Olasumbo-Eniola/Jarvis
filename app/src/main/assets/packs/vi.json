@@ -1,0 +1,227 @@
+{
+  "code": "vi",
+  "name": "Tiếng Việt",
+  "aliases": [
+    "tiếng việt",
+    "tieng viet",
+    "vietnamese"
+  ],
+  "stt": "vi-VN",
+  "tts": "vi-VN",
+  "phrases": {
+    "back": [
+      "quay lại",
+      "trở lại",
+      "màn hình trước"
+    ],
+    "home": [
+      "màn hình chính",
+      "về màn hình chính",
+      "trang chủ",
+      "về trang chủ"
+    ],
+    "recents": [
+      "ứng dụng gần đây",
+      "gần đây",
+      "mở ứng dụng gần đây"
+    ],
+    "notifications": [
+      "thông báo",
+      "mở thông báo",
+      "xem thông báo",
+      "đọc thông báo"
+    ],
+    "quick_settings": [
+      "cài đặt nhanh",
+      "mở cài đặt nhanh"
+    ],
+    "read_screen": [
+      "đọc màn hình",
+      "trên màn hình có gì",
+      "đọc cái này"
+    ],
+    "read_buttons": [
+      "đọc các nút",
+      "liệt kê các nút",
+      "có những nút nào",
+      "tôi có thể nhấn gì"
+    ],
+    "scroll_down": [
+      "cuộn xuống",
+      "xuống",
+      "trang tiếp theo"
+    ],
+    "scroll_up": [
+      "cuộn lên",
+      "lên",
+      "trang trước"
+    ],
+    "lock": [
+      "khóa màn hình",
+      "khóa điện thoại"
+    ],
+    "volume_up": [
+      "tăng âm lượng",
+      "to lên",
+      "lớn hơn"
+    ],
+    "volume_down": [
+      "giảm âm lượng",
+      "nhỏ lại",
+      "nhỏ hơn"
+    ],
+    "clear_text": [
+      "xóa chữ",
+      "xóa ô",
+      "xóa cái này"
+    ],
+    "quit": [
+      "thoát",
+      "dừng nghe",
+      "tạm biệt",
+      "tắt đi"
+    ],
+    "help": [
+      "trợ giúp",
+      "bạn làm được gì",
+      "giúp tôi"
+    ],
+    "open_accessibility": [
+      "mở cài đặt hỗ trợ tiếp cận",
+      "cài đặt hỗ trợ tiếp cận"
+    ],
+    "open_app_settings": [
+      "mở cài đặt ứng dụng",
+      "cài đặt bị hạn chế"
+    ],
+    "yes": [
+      "có",
+      "vâng",
+      "đúng",
+      "xác nhận",
+      "làm đi",
+      "được",
+      "ừ"
+    ],
+    "no": [
+      "không",
+      "hủy",
+      "dừng",
+      "thôi",
+      "bỏ qua"
+    ]
+  },
+  "verbs": {
+    "tap": [
+      "nhấn",
+      "nhấn vào",
+      "chạm vào",
+      "bấm",
+      "chọn"
+    ],
+    "open": [
+      "mở",
+      "khởi động",
+      "vào"
+    ],
+    "call": [
+      "gọi",
+      "gọi cho",
+      "gọi điện cho"
+    ],
+    "whatsapp": [
+      "nhắn tin cho",
+      "gửi tin nhắn cho",
+      "nhắn cho",
+      "whatsapp"
+    ],
+    "search": [
+      "tìm",
+      "tìm kiếm",
+      "tra cứu"
+    ],
+    "type": [
+      "gõ",
+      "viết",
+      "nhập"
+    ],
+    "fill": [
+      "điền",
+      "đặt"
+    ],
+    "language": [
+      "đổi ngôn ngữ sang",
+      "chuyển ngôn ngữ sang",
+      "nói tiếng"
+    ]
+  },
+  "fillers": [
+    "nút",
+    "làm ơn",
+    "giúp",
+    "của tôi",
+    "danh bạ",
+    "ứng dụng",
+    "ô",
+    "vào"
+  ],
+  "with": [
+    "bằng",
+    "là"
+  ],
+  "risky": [
+    "gửi",
+    "xóa",
+    "thanh toán",
+    "trả tiền",
+    "mua",
+    "đặt hàng",
+    "xác nhận",
+    "đăng",
+    "chuyển khoản",
+    "đăng xuất",
+    "gỡ cài đặt",
+    "đặt lại",
+    "chặn"
+  ],
+  "ordinals": [
+    "thứ nhất|đầu tiên|một|1",
+    "thứ hai|hai|2",
+    "thứ ba|ba|3",
+    "thứ tư|bốn|4",
+    "thứ năm|năm|5"
+  ],
+  "say": {
+    "here": "Vâng?",
+    "welcome": "Xin chào, tôi là Jarvis, trợ lý giọng nói của bạn. Hãy nói %s, chờ tiếng bíp, rồi hỏi tôi. Tôi có thể đọc màn hình, nhấn nút, điền biểu mẫu, mở ứng dụng, gọi điện và trả lời câu hỏi. Nói trợ giúp bất cứ lúc nào.",
+    "setup_hint": "Trước tiên, tôi cần được bật trong cài đặt hỗ trợ tiếp cận. Hãy nói mở cài đặt hỗ trợ tiếp cận, tìm Jarvis trong danh sách và bật lên. Nếu công tắc không bật được, hãy nói mở cài đặt ứng dụng, chạm vào ba chấm ở góc trên bên phải, chọn cho phép cài đặt bị hạn chế, rồi thử lại.",
+    "ok": "Được.",
+    "notfound": "Tôi không tìm thấy %s.",
+    "confirm": "Nhấn %s? Nói có hoặc không.",
+    "confirm_call": "Gọi %s? Nói có hoặc không.",
+    "tapfail": "Lần nhấn đó không thành công.",
+    "disabled": "%s đang bị tắt nên không nhấn được.",
+    "choose": "Tôi tìm thấy %d kết quả cho %s. Hãy nói thứ nhất, thứ hai, v.v.",
+    "noservice": "Hãy bật Jarvis trong cài đặt hỗ trợ tiếp cận.",
+    "nocontacts": "Tôi cần quyền đọc danh bạ của bạn.",
+    "contact_missing": "Tôi không tìm thấy liên hệ tên %s.",
+    "app_missing": "Tôi không tìm thấy ứng dụng tên %s.",
+    "opening": "Đang mở %s.",
+    "field_missing": "Tôi không tìm thấy ô tên %s.",
+    "no_input": "Hãy chạm vào một ô nhập chữ trước.",
+    "no_screenshot": "Tôi không chụp được màn hình này.",
+    "notunderstood": "Xin lỗi, tôi không hiểu.",
+    "ai_error": "Dịch vụ AI không phản hồi. Hãy thử lại sau.",
+    "switched": "Bây giờ tôi nói %s.",
+    "lang_missing": "Tôi không có ngôn ngữ tên %s.",
+    "bye": "Tạm biệt.",
+    "empty_screen": "Tôi không thấy gì trên màn hình này.",
+    "buttons": "Các nút:",
+    "unlabeled": "Có %d nút không có tên.",
+    "need_arg": "Hãy nói lại kèm một cái tên.",
+    "openfail": "Tôi không mở được.",
+    "help": "Bạn có thể nói: quay lại, màn hình chính, đọc màn hình, đọc các nút, nhấn kèm tên nút, mở kèm tên ứng dụng, gọi hoặc nhắn tin cho kèm tên liên hệ, tìm, gõ, hoặc đổi ngôn ngữ.",
+    "prompt": "Tôi đang nghe. Bạn muốn gì?",
+    "idle_bye": "Được, tôi ở đây. Nói %s khi bạn cần tôi."
+  }
+}
