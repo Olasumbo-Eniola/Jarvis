@@ -16,6 +16,7 @@ import java.net.URLEncoder
 import ng.ainow.jarvis.Prefs
 import ng.ainow.jarvis.ai.AiClient
 import ng.ainow.jarvis.language.Cmd
+import ng.ainow.jarvis.language.Labels
 import ng.ainow.jarvis.language.LangDetect
 import ng.ainow.jarvis.language.Matcher
 import ng.ainow.jarvis.language.Nlu
@@ -46,25 +47,26 @@ class Brain(
     private val ai = AiClient(prefs)
     private val ocr = Ocr()
     private val en: Pack = Packs.load(ctx, "en")
-    /** Read fresh each time so a language picked on the setup screen applies straight away. */
+    /** Read fresh each time so a language picked in Settings applies straight away. */
     val pack: Pack get() = Packs.load(ctx, prefs.lang)
     /**
-     * Command words to understand: the chosen language first, then English, then the other Nigerian
-     * languages, so a sentence that mixes them (code-switching) still matches. Replies stay in the
-     * chosen language.
+     * Try the detected language, selected language, English and the other Nigerian languages.
+     * The reply language preference does not change which commands Jarvis can understand.
      */
     private val packs: List<Pack>
-        get() = (listOf(replyPack, pack, en) + NIGERIAN.map { Packs.load(ctx, it) }).distinctBy { it.code }
+        get() = (listOfNotNull(spokenLang?.let { Packs.load(ctx, it) }, pack, en) + NIGERIAN.map { Packs.load(ctx, it) })
+            .distinctBy { it.code }
 
     /**
-     * The language the user is speaking right now. Jarvis answers in it: speak Yorùbá and it replies
-     * in Yorùbá, switch to English and it switches too. Cleared when a conversation ends, so each new
-     * one starts in the language chosen on the setup screen.
+     * The language heard during this conversation. It can change as the user switches languages.
      */
     private var spokenLang: String? = null
-    val replyPack: Pack get() = Packs.load(ctx, spokenLang ?: prefs.lang)
+    val replyPack: Pack get() = if (prefs.replyInSelectedLanguage) pack else spokenLang?.let { Packs.load(ctx, it) } ?: pack
 
-    fun endConversation() { spokenLang = null }
+    fun endConversation() {
+        spokenLang = null
+        clearPending()
+    }
 
     /** Jarvis's own words, in the language of the conversation. */
     private fun speak(text: String) = output(text, replyPack.code)
@@ -78,8 +80,7 @@ class Brain(
     private var work = 0
     val busy: Boolean get() = work > 0
 
-    private val ANSWER_MS = 15_000L
-    private var pendingUntil = 0L
+    private val answerWindow = AnswerWindow(SystemClock::elapsedRealtime)
     private var pendingYes: (() -> Unit)? = null
     private var pendingChoice: List<() -> Unit>? = null
     /** "send message to" with no name: the next thing said is the name or number (command id). */
@@ -96,7 +97,15 @@ class Brain(
         return if (a.isEmpty()) s else String.format(s, *a)
     }
 
-    private fun say(key: String, vararg a: Any) = speak(t(key, *a))
+    /**
+     * A phrase missing from the reply pack falls back to English. Speak that English text with
+     * an English voice, otherwise a Yorùbá (or other) voice reads English words with its accent.
+     */
+    private fun say(key: String, vararg a: Any) {
+        val lang = if (replyPack.say[key] == null && en.say[key] != null) en.code else replyPack.code
+        // Menu names and English words inside the phrase get their own voice (see Labels).
+        for (piece in Labels.split(t(key, *a), lang) { Labels.phone(ctx, it) }) output(piece.text, piece.lang)
+    }
 
     /** For the service: speak one of the pack's phrases. */
     fun announce(key: String, vararg a: Any) = say(key, *a)
@@ -105,6 +114,7 @@ class Brain(
         pendingYes = null
         pendingChoice = null
         pendingArg = null
+        answerWindow.reset()
     }
 
     /** First start: introduce Jarvis and say what to do next. Spoken once. */
@@ -120,9 +130,14 @@ class Brain(
 
     // ------------------------------------------------------------------ hearing
 
-    /** True while Jarvis has asked a yes/no or "which one" question and is waiting for the answer. */
+    private val hasPendingQuestion: Boolean
+        get() = pendingYes != null || pendingChoice != null || pendingArg != null
+
+    /** A built-in question is pending while it is spoken and during the answer window. */
     val awaitingAnswer: Boolean
-        get() = (pendingYes != null || pendingChoice != null || pendingArg != null) && SystemClock.elapsedRealtime() <= pendingUntil
+        get() = hasPendingQuestion && answerWindow.remainingMs != 0L
+
+    fun startListeningForAnswer(): Long? = if (hasPendingQuestion) answerWindow.start() else null
 
     /**
      * [alts] are the recogniser's alternatives, best first.
@@ -131,7 +146,7 @@ class Brain(
      * except for the answer to a question it has just asked.
      */
     fun heard(alts: List<String>, addressed: Boolean = false): Boolean {
-        val now = SystemClock.elapsedRealtime()
+        if (hasPendingQuestion && !awaitingAnswer) clearPending()
         // [addressed] = the wake word engine already heard the call, so no name is needed in the sentence.
         val cands = alts.map { Nlu.stripWake(it, prefs.wakeName) }.map { Pair(it.first || addressed, it.second) }
 
@@ -142,45 +157,51 @@ class Brain(
         // unless it is a whole new command ("open YouTube").
         val pa = pendingArg
         if (pa != null) {
-            pendingArg = null
             val rest = cands.firstOrNull()?.second.orEmpty()
-            if (now <= pendingUntil && rest.isNotBlank() && Nlu.parse(rest, packs) is Cmd.Unknown) {
-                run(Nlu.argument(pa, rest, packs))
-                return true
+            if (rest.isNotBlank()) {
+                clearPending()
+                if (Nlu.parse(rest, packs) is Cmd.Unknown) {
+                    run(Nlu.argument(pa, rest, packs))
+                    return true
+                }
             }
         }
 
         // Waiting for "yes/no" or "first/second"?
         if (pendingYes != null || pendingChoice != null) {
-            if (now > pendingUntil) {
-                clearPending()
-            } else {
-                val py = pendingYes
-                val pc = pendingChoice
-                for ((_, rest) in cands) {
-                    if (pc != null) {
-                        val n = Nlu.ordinal(rest, packs)
-                        if (n != null && n in 1..pc.size) {
-                            clearPending()
-                            pc[n - 1]()
-                            return true
-                        }
-                    }
-                    val c = Nlu.parse(rest, packs)
-                    if (c is Cmd.Simple && c.id == "yes" && py != null) {
+            val py = pendingYes
+            val pc = pendingChoice
+            for ((_, rest) in cands) {
+                if (pc != null) {
+                    val n = Nlu.ordinal(rest, packs)
+                    if (n != null && n in 1..pc.size) {
                         clearPending()
-                        py()
-                        return true
-                    }
-                    if (c is Cmd.Simple && c.id == "no") {
-                        clearPending()
-                        say("ok")
+                        pc[n - 1]()
                         return true
                     }
                 }
-                if (cands.none { it.first }) return false // not addressed to Jarvis: keep waiting quietly
-                clearPending()
+                val c = Nlu.parse(rest, packs)
+                if (c is Cmd.Simple && c.id == "yes" && py != null) {
+                    clearPending()
+                    py()
+                    return true
+                }
+                if (c is Cmd.Simple && c.id == "no") {
+                    clearPending()
+                    say("ok")
+                    return true
+                }
             }
+            // Keep the question open through noise or a misheard answer. A new command can replace it.
+            val replacement = cands.any { (had, rest) ->
+                if (!had || rest.isBlank()) false else when (val cmd = Nlu.parse(rest, packs)) {
+                    is Cmd.Unknown -> false
+                    is Cmd.Arg -> true
+                    is Cmd.Simple -> cmd.id != "yes"
+                }
+            }
+            if (!replacement) return false
+            clearPending()
         }
 
         var chosen: Cmd? = null
@@ -289,7 +310,6 @@ class Brain(
         if (c.arg.isBlank() && c.id != "fill") {
             clearPending()
             pendingArg = c.id
-            pendingUntil = SystemClock.elapsedRealtime() + ANSWER_MS
             say("need_arg")
             return
         }
@@ -339,9 +359,8 @@ class Brain(
 
     private fun confirmThen(label: String, act: () -> Unit) {
         if (needsConfirm(label)) {
+            clearPending()
             pendingYes = act
-            pendingChoice = null
-            pendingUntil = SystemClock.elapsedRealtime() + ANSWER_MS
             say("confirm", label)
         } else {
             act()
@@ -366,9 +385,8 @@ class Brain(
             .sortedWith(compareBy({ it.rect.top }, { it.rect.left }))
             .take(5)
         if (ties.size >= 2) {
+            clearPending()
             pendingChoice = ties.map { item -> { clickItem(svc, item) } }
-            pendingYes = null
-            pendingUntil = SystemClock.elapsedRealtime() + ANSWER_MS
             say("choose", ties.size, target)
             return
         }
@@ -714,9 +732,8 @@ class Brain(
             digits = c.number.filter { it.isDigit() || it == '+' }
             who = c.name
         }
+        clearPending()
         pendingYes = { launch(Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + Uri.encode(digits)))) }
-        pendingChoice = null
-        pendingUntil = SystemClock.elapsedRealtime() + ANSWER_MS
         say("confirm_call", who)
     }
 

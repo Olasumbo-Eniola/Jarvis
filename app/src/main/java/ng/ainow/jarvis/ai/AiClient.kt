@@ -214,9 +214,10 @@ class AiClient(private val prefs: Prefs) {
 
     /** One short request: is this a command, a question needing the internet, or just chat? Returns JSON text. */
     fun interpret(text: String, languageName: String, buttons: List<String>, cb: (Result) -> Unit) {
+        val style = if (prefs.detailedReplies) "give a useful explanation in up to 150 words" else "be brief, at most 40 words"
         val system = """
 You are Jarvis, a friendly voice assistant that controls an Android phone for a blind user.
-The user speaks $languageName (they may mix English). Answer ONLY with JSON.
+The user may speak or mix different languages. Answer ONLY with JSON.
 1. If the user wants the phone to do something, reply {"type":"command","id":"<id>","arg":"<text>"}.
    Allowed ids: tap (arg = the button the user means; prefer a name from the list below), open (arg = app name),
    call (arg = contact name), whatsapp (arg = contact name), search (arg = what to search),
@@ -224,7 +225,7 @@ The user speaks $languageName (they may mix English). Answer ONLY with JSON.
    read_screen, read_buttons, scroll_down, scroll_up.
 2. If the answer needs current information from the internet (weather, news, sports, prices, anything recent),
    reply {"type":"web","query":"<a clear search question>"}.
-3. Otherwise reply {"type":"chat","reply":"<answer in $languageName, at most 40 words, plain text, no markdown>"}.
+3. Otherwise reply {"type":"chat","reply":"<answer in $languageName, plain text, no markdown>"}. For chat, $style.
 Buttons visible now: ${buttons.joinToString(" | ")}
 """.trimIndent()
         ask(system, text, json = true, cb = cb)
@@ -264,7 +265,8 @@ Answer ONLY with a JSON array of strings, one per item, in the same order.
 
     /** Answers from the internet using Google Search grounding. Plain text for speaking. */
     fun answer(question: String, languageName: String, cb: (Result) -> Unit) {
-        val system = "You are Jarvis, a voice assistant. Use Google Search for current facts. Answer in $languageName in at most 60 words, plain text only: no markdown, no lists, no links."
+        val style = if (prefs.detailedReplies) "Give a useful explanation in up to 150 words." else "Answer in at most 60 words."
+        val system = "You are Jarvis, a voice assistant. Use Google Search for current facts. Reply in $languageName. $style Use plain text only: no markdown, no lists, no links."
         ask(system, question, search = true, cb = cb)
     }
 

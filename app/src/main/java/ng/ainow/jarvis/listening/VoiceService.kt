@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.media.AudioManager
@@ -17,6 +18,7 @@ import android.os.Looper
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import android.util.Log
 import com.rementia.openwakeword.lib.WakeWordEngine
 import com.rementia.openwakeword.lib.model.DetectionMode
 import com.rementia.openwakeword.lib.model.WakeWordModel
@@ -34,7 +36,7 @@ import ng.ainow.jarvis.ui.SetupNotice
 /**
  * Works like "Hey Google":
  *   WAKE     a small on-device model listens for "Jarvis" or "Hey Jarvis" (no beeps, little battery).
- *            First choice is the keyword spotter (KwsWake); if it can't start, the older
+ *            First choice is the keyword spotter (KwsWake); if it fails, the older
  *            "Hey Jarvis"-only model (openWakeWord) is used instead
  *   SESSION  one beep, then the speech recogniser takes ONE command. If Jarvis asks a question
  *            ("are you sure?", "which one?") it listens for the answer; otherwise it plays a
@@ -66,8 +68,12 @@ class VoiceService : Service() {
     private var yarnFailures = 0
     private var listening = false
     private var sttFallback = false
+    private var sttLanguage: String? = null
     private var muted = false
     private var mode = Mode.LOOP
+    private val preferenceChanged = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == Prefs.QUIET_EARS) quiet(prefs.quietEars)
+    }
 
     private var kws: KwsWake? = null
     private var kwsFailed = false
@@ -81,12 +87,14 @@ class VoiceService : Service() {
 
     /** Ignore wake detections this long after Jarvis stops talking, so it cannot wake itself. */
     private val SELF_VOICE_MS = 1500L
+    private val answerTimedOut = Runnable { endSession() }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
         prefs = Prefs(this)
+        prefs.registerChangeListener(preferenceChanged)
         startInForeground()
         speaker = Speaker(this) { maybeListen() }
         brain = Brain(this, prefs) { text, lang -> speaker.speak(text, lang) }
@@ -103,6 +111,7 @@ class VoiceService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
 
     override fun onDestroy() {
+        prefs.unregisterChangeListener(preferenceChanged)
         running = false
         main.removeCallbacksAndMessages(null)
         stopWake(release = true)
@@ -141,7 +150,15 @@ class VoiceService : Service() {
                     wakeDetected(score)
                 }
             }
-            engine.start()
+            engine.start { error ->
+                main.post {
+                    if (running && mode == Mode.WAKE && wake === engine) {
+                        Log.w("JarvisWake", "Backup wake listener lost microphone access", error)
+                        stopWake(release = true)
+                        enterLoop("The backup wake listener stopped: ${error.javaClass.simpleName}")
+                    }
+                }
+            }
             mode = Mode.WAKE
             modeName = "waiting for \"" + brain.wakePhrase + "\""
         } catch (e: Throwable) {
@@ -154,21 +171,34 @@ class VoiceService : Service() {
     private fun startKws(): Boolean {
         if (kwsFailed) return false
         try {
-            val k = kws ?: KwsWake(this) { word -> wakeDetected("heard " + word.replace('_', ' ').lowercase()) }
+            val k = kws ?: KwsWake(
+                this,
+                onWake = { word -> wakeDetected("heard " + word.replace('_', ' ').lowercase()) },
+                onFailure = { error ->
+                    if (running && mode == Mode.WAKE) {
+                        fallBackFromKws("stopped", error)
+                        startWakeWhenQuiet()
+                    }
+                },
+            )
             kws = k
             k.start()
             brain.wakePhrase = "Jarvis"
             mode = Mode.WAKE
             modeName = "waiting for \"Jarvis\" or \"Hey Jarvis\""
             return true
-        } catch (e: Throwable) {
-            // Don't try again this run: use the "Hey Jarvis" model from now on.
-            kwsFailed = true
-            try { kws?.release() } catch (t: Throwable) {}
-            kws = null
-            debug = "Keyword spotter could not start (" + e.javaClass.simpleName + "), using the Hey Jarvis model"
+        } catch (error: Throwable) {
+            fallBackFromKws("could not start", error)
             return false
         }
+    }
+
+    private fun fallBackFromKws(reason: String, error: Throwable) {
+        kwsFailed = true
+        kws?.release()
+        kws = null
+        debug = "Keyword spotter $reason (${error.javaClass.simpleName}), switching to the Hey Jarvis model"
+        Log.w("JarvisWake", "Keyword spotter $reason", error)
     }
 
     /** Either wake engine heard the name. [what] is shown on the setup screen for debugging. */
@@ -229,14 +259,15 @@ class VoiceService : Service() {
 
     private fun endSession() {
         if (mode != Mode.SESSION) return
-        try { rec?.cancel() } catch (e: Exception) {}
+        mode = Mode.WAKE
+        main.removeCallbacks(answerTimedOut)
+        resetRecognizer()
         yarnEars?.cancel()
         yarnEars = null
         yarnFailures = 0 // try YarnGPT again next time
         brain.endConversation()
         listening = false
         beep(false)
-        mode = Mode.WAKE
         modeName = "waiting for \"" + brain.wakePhrase + "\""
         main.postDelayed({ startWakeWhenQuiet() }, 600)
     }
@@ -257,7 +288,7 @@ class VoiceService : Service() {
             .setContentText("Waiting for the wake phrase")
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .setOngoing(true)
-            .setContentIntent(SetupNotice.openJarvis(this)) // tap to open the Jarvis settings screen
+            .setContentIntent(SetupNotice.openJarvis(this))
             .build()
         if (Build.VERSION.SDK_INT >= 29) {
             startForeground(1, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
@@ -284,15 +315,22 @@ class VoiceService : Service() {
 
     private fun maybeListen() {
         if (!running || mode == Mode.WAKE || listening || speaker.busy || brain.busy) return
-        // One command per wake: go back to waiting for the name unless Jarvis asked a question.
-        if (mode == Mode.SESSION && handledInSession && !brain.awaitingAnswer) {
-            endSession()
-            return
+        // Start the clock after the prompt and keep the same deadline across recognition attempts.
+        val answerMs = brain.startListeningForAnswer()?.takeIf { it > 0 }
+        if (mode == Mode.SESSION) {
+            if (answerMs != null) {
+                modeName = "waiting for your answer"
+                main.removeCallbacks(answerTimedOut)
+                main.postDelayed(answerTimedOut, answerMs)
+            } else if (handledInSession) {
+                endSession()
+                return
+            }
         }
-        listen()
+        listen(answerMs)
     }
 
-    private fun listen() {
+    private fun listen(answerMs: Long? = null) {
         if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             stopSelf()
             return
@@ -300,7 +338,7 @@ class VoiceService : Service() {
         // After "Hey Jarvis": YarnGPT hears all five Nigerian languages, even mixed in one sentence.
         // Not used in the always-listening fallback mode, where it would stream (and bill) all day.
         if (mode == Mode.SESSION && Yarn.allowed(prefs) && yarnFailures < 2) {
-            yarnListen()
+            yarnListen(answerMs)
             return
         }
         if (!SpeechRecognizer.isRecognitionAvailable(this)) {
@@ -311,7 +349,12 @@ class VoiceService : Service() {
         if (rec == null) {
             rec = SpeechRecognizer.createSpeechRecognizer(this).also { it.setRecognitionListener(listener) }
         }
-        val tag = if (sttFallback) "en-US" else brain.pack.stt
+        val selected = brain.pack.stt
+        if (selected != sttLanguage) {
+            sttLanguage = selected
+            sttFallback = false
+        }
+        val tag = if (sttFallback) "en-US" else selected
         val i = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
         i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
         i.putExtra(RecognizerIntent.EXTRA_LANGUAGE, tag)
@@ -328,10 +371,12 @@ class VoiceService : Service() {
         }
     }
 
-    private fun yarnListen() {
+    private fun yarnListen(answerMs: Long?) {
         listening = true
-        val ears = Yarn.Listener(prefs.yarnKey, object : Yarn.Ears {
+        lateinit var ears: Yarn.Listener
+        ears = Yarn.Listener(prefs.yarnKey, object : Yarn.Ears {
             override fun onText(text: String) {
+                if (yarnEars !== ears) return
                 listening = false
                 yarnEars = null
                 yarnFailures = 0
@@ -341,6 +386,7 @@ class VoiceService : Service() {
             }
 
             override fun onSilence() {
+                if (yarnEars !== ears) return
                 listening = false
                 yarnEars = null
                 yarnFailures = 0
@@ -348,6 +394,7 @@ class VoiceService : Service() {
             }
 
             override fun onFailed(why: String) {
+                if (yarnEars !== ears) return
                 listening = false
                 yarnEars = null
                 yarnFailures++
@@ -355,7 +402,7 @@ class VoiceService : Service() {
                 // Two failures in a row (no internet, out of credit): use the phone's recogniser.
                 retryIn(300)
             }
-        })
+        }, waitForSpeechMs = answerMs ?: Yarn.Listener.NO_SPEECH_MS)
         yarnEars = ears
         ears.start()
     }
@@ -363,11 +410,15 @@ class VoiceService : Service() {
     /** Passes what was heard to the brain, then listens again, waits for an answer, or ends the session. */
     private fun handle(alts: List<String>) {
         val inSession = mode == Mode.SESSION
+        val alreadyHandled = handledInSession
         // Set before heard(): the brain may call back into maybeListen() while handling it.
-        if (inSession) handledInSession = true
+        if (inSession) {
+            main.removeCallbacks(answerTimedOut)
+            handledInSession = true
+        }
         val acted = brain.heard(alts, addressed = inSession)
         if (inSession && !acted) {
-            handledInSession = false
+            handledInSession = alreadyHandled
             quietTurn()          // heard words but nothing to act on: treat like silence
             return
         }
@@ -404,6 +455,11 @@ class VoiceService : Service() {
     /** Nothing was said or nothing understood. In a session that means "I'm done". */
     private fun quietTurn() {
         if (mode == Mode.SESSION) {
+            if (handledInSession) {
+                // A recognizer may report silence before the answer window has elapsed.
+                if (brain.awaitingAnswer) retryIn(150) else endSession()
+                return
+            }
             silentTurns++
             when (silentTurns) {
                 1 -> brain.announce("prompt")                       // "I am listening. What would you like?"
@@ -427,18 +483,24 @@ class VoiceService : Service() {
         override fun onEvent(eventType: Int, params: Bundle?) {}
 
         override fun onError(error: Int) {
+            if (!running || mode == Mode.WAKE) return
             listening = false
             debug = "Recogniser error $error (mode $mode)"
             when (error) {
                 9 -> stopSelf()                                  // permissions missing
                 12, 13 -> languageMissing()                      // language not supported / available
                 5, 8 -> { resetRecognizer(); retryIn(800) }      // client error / recogniser busy
-                2, 4 -> { if (mode == Mode.SESSION) endSession() else retryIn(2000) } // network / server
+                2, 4 -> when {
+                    mode == Mode.LOOP -> retryIn(2000)
+                    brain.awaitingAnswer -> retryIn(1000)
+                    else -> endSession()
+                }
                 else -> quietTurn()                              // 6 silence, 7 no match
             }
         }
 
         override fun onResults(results: Bundle?) {
+            if (!running || mode == Mode.WAKE) return
             listening = false
             val list = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION) ?: arrayListOf()
             if (list.isEmpty()) {

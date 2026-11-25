@@ -6,6 +6,7 @@ import android.os.Build
 import android.os.Bundle
 import android.text.Editable
 import android.text.InputType
+import android.text.SpannableStringBuilder
 import android.text.TextWatcher
 import android.view.View
 import android.view.ViewGroup
@@ -56,14 +57,17 @@ class LanguageActivity : Activity() {
     private var chosen = "en"
     private lateinit var list: ListView
     private lateinit var useBtn: Button
-    private val voice by lazy { Speaker(this) {} }
+    private val preview = lazy { Speaker(this) {} }
+    private val voice get() = preview.value
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefs = Prefs(this)
         title = "Choose language"
+        val ui = JarvisScreen(this)
         val codes = Packs.codes(this)
-        chosen = if (prefs.lang in codes) prefs.lang else "en"
+        val saved = savedInstanceState?.getString("chosenLanguage") ?: prefs.lang
+        chosen = if (saved in codes) saved else "en"
         all = codes.map { Row.Lang(Packs.load(this, it), englishName(it)) }
 
         val pad = (16 * resources.displayMetrics.density).toInt()
@@ -71,18 +75,16 @@ class LanguageActivity : Activity() {
         col.orientation = LinearLayout.VERTICAL
         col.setPadding(pad, pad, pad, pad)
 
-        val heading = TextView(this)
-        heading.text = "Choose language. Tap one to hear it."
-        heading.textSize = 20f
-        heading.setTypeface(heading.typeface, Typeface.BOLD)
-        if (Build.VERSION.SDK_INT >= 28) heading.isAccessibilityHeading = true
-        col.addView(heading)
+        ui.add(col, ui.heading("Choose language"))
+        ui.add(col, ui.text("Select a language to hear a sample."), 6)
+        if (Build.VERSION.SDK_INT >= 28) col.accessibilityPaneTitle = "Choose language"
 
         val search = EditText(this)
         search.hint = "Search languages"
         search.contentDescription = "Search languages"
         search.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
         search.setSingleLine()
+        search.minHeight = ui.dp(56)
         search.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -101,17 +103,16 @@ class LanguageActivity : Activity() {
 
         val buttons = LinearLayout(this)
         buttons.orientation = LinearLayout.HORIZONTAL
-        val cancel = Button(this)
-        cancel.text = "Cancel"
-        cancel.setOnClickListener { finish() }
-        useBtn = Button(this)
-        useBtn.setOnClickListener {
+        val cancel = ui.button("Cancel") { finish() }
+        useBtn = ui.button("", primary = true) {
             prefs.lang = chosen
             setResult(RESULT_OK)
             finish()
         }
         buttons.addView(cancel, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        buttons.addView(useBtn, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 2f))
+        buttons.addView(useBtn, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 2f).apply {
+            marginStart = ui.dp(8)
+        })
         col.addView(buttons)
 
         setContentView(col)
@@ -120,13 +121,18 @@ class LanguageActivity : Activity() {
     }
 
     override fun onPause() {
-        voice.stop()
+        if (preview.isInitialized()) voice.stop()
         super.onPause()
     }
 
     override fun onDestroy() {
-        voice.shutdown()
+        if (preview.isInitialized()) voice.shutdown()
         super.onDestroy()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putString("chosenLanguage", chosen)
+        super.onSaveInstanceState(outState)
     }
 
     private fun pick(p: Pack) {
@@ -142,7 +148,7 @@ class LanguageActivity : Activity() {
 
     private fun updateUseButton() {
         val p = all.firstOrNull { it.pack.code == chosen }?.pack
-        useBtn.text = "Use " + (p?.name ?: "English")
+        useBtn.text = SpannableStringBuilder("Use ").append(p?.let { HomeText.inLanguage(it.name, it) } ?: "English")
     }
 
     /** Matches the native name, English name, code or aliases, ignoring accents and case. */
@@ -197,7 +203,9 @@ class LanguageActivity : Activity() {
                     val tv = convertView as? CheckedTextView ?: (layoutInflater.inflate(
                         android.R.layout.simple_list_item_single_choice, parent, false) as CheckedTextView)
                     // "Yorùbá (Yoruba)"; just "English" when both names are the same.
-                    tv.text = if (plain(r.pack.name) == plain(r.english)) r.pack.name else r.pack.name + " (" + r.english + ")"
+                    tv.text = SpannableStringBuilder(HomeText.inLanguage(r.pack.name, r.pack)).apply {
+                        if (plain(r.pack.name) != plain(r.english)) append(" (${r.english})")
+                    }
                     tv
                 }
             }

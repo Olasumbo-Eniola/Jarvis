@@ -1,14 +1,28 @@
 package ng.ainow.jarvis
 
 import android.content.Context
+import android.content.SharedPreferences
 
 /** Small settings store. Everything stays on the phone. */
 class Prefs(ctx: Context) {
+    companion object {
+        const val LANGUAGE = "lang"
+        const val QUIET_EARS = "quietEars"
+    }
+
     private val sp = ctx.applicationContext.getSharedPreferences("jarvis", Context.MODE_PRIVATE)
 
     var lang: String
-        get() = sp.getString("lang", "en") ?: "en"
-        set(v) { sp.edit().putString("lang", v).apply() }
+        get() = sp.getString(LANGUAGE, "en") ?: "en"
+        set(v) { sp.edit().putString(LANGUAGE, v).apply() }
+
+    var replyInSelectedLanguage: Boolean
+        get() = sp.getBoolean("replyInSelectedLanguage", false)
+        set(v) { sp.edit().putBoolean("replyInSelectedLanguage", v).apply() }
+
+    var detailedReplies: Boolean
+        get() = sp.getBoolean("detailedReplies", false)
+        set(v) { sp.edit().putBoolean("detailedReplies", v).apply() }
 
     var wakeName: String
         get() = sp.getString("wakeName", "Jarvis") ?: "Jarvis"
@@ -33,13 +47,20 @@ class Prefs(ctx: Context) {
         set(v) { sp.edit().putBoolean("requireName", v).apply() }
 
     var quietEars: Boolean
-        get() = sp.getBoolean("quietEars", true)
-        set(v) { sp.edit().putBoolean("quietEars", v).apply() }
+        get() = sp.getBoolean(QUIET_EARS, true)
+        set(v) { sp.edit().putBoolean(QUIET_EARS, v).apply() }
 
-    /** Wake word threshold. Lower = easier to trigger (more false alarms). */
-    var wakeThreshold: Float
+    fun registerChangeListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
+        sp.registerOnSharedPreferenceChangeListener(listener)
+    }
+
+    fun unregisterChangeListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
+        sp.unregisterOnSharedPreferenceChangeListener(listener)
+    }
+
+    /** Internal threshold for the backup wake model, honoring values saved by earlier versions. */
+    val wakeThreshold: Float
         get() = sp.getFloat("wakeThreshold", 0.15f)
-        set(v) { sp.edit().putFloat("wakeThreshold", v.coerceIn(0.02f, 0.9f)).apply() }
 
     /** True only if the user pressed Stop. Otherwise Jarvis starts by itself whenever the app opens. */
     var userStopped: Boolean

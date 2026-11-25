@@ -22,15 +22,19 @@ import com.k2fsa.sherpa.onnx.OnlineTransducerModelConfig
  * model's BPE pieces (e.g. JARVIS = "▁JA R VI S"); make them with the model's bpe.model and
  * sentencepiece, or sherpa-onnx's text2token tool.
  *
- * [onWake] is called on the main thread with the keyword heard (e.g. "JARVIS").
+ * [onWake] and [onFailure] are called on the main thread. Start, stop, and release also run there.
  */
-class KwsWake(ctx: Context, private val onWake: (String) -> Unit) {
+class KwsWake(
+    ctx: Context,
+    private val onWake: (String) -> Unit,
+    private val onFailure: (Throwable) -> Unit,
+) {
     private val main = Handler(Looper.getMainLooper())
     private val spotter: KeywordSpotter
 
-    @Volatile private var running = false
+    @Volatile private var recorder: AudioRecord? = null
     private var thread: Thread? = null
-    private var recorder: AudioRecord? = null
+    private var released = false
 
     init {
         val config = KeywordSpotterConfig().apply {
@@ -60,42 +64,69 @@ class KwsWake(ctx: Context, private val onWake: (String) -> Unit) {
     /** Opens the microphone and starts listening. Throws if the microphone can't be opened. */
     @SuppressLint("MissingPermission") // the service checks RECORD_AUDIO before calling this
     fun start() {
-        if (running) return
+        check(!released) { "keyword spotter was released" }
+        if (recorder != null) return
+        check(thread?.isAlive != true) { "previous wake listener is still stopping" }
         val minBuf = AudioRecord.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
         val rec = AudioRecord(
             MediaRecorder.AudioSource.VOICE_RECOGNITION, SAMPLE_RATE,
             AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT,
             maxOf(minBuf, CHUNK * 2 * 2)
         )
-        if (rec.state != AudioRecord.STATE_INITIALIZED) {
-            rec.release()
-            throw IllegalStateException("microphone could not be opened")
+        try {
+            check(rec.state == AudioRecord.STATE_INITIALIZED) { "microphone could not be opened" }
+            rec.startRecording()
+            check(rec.recordingState == AudioRecord.RECORDSTATE_RECORDING) { "microphone did not start recording" }
+            recorder = rec
+            thread = Thread({ runListener(rec) }, "jarvis-kws").also { it.start() }
+        } catch (error: Throwable) {
+            recorder = null
+            runCatching { rec.release() }
+            throw error
         }
-        recorder = rec
-        running = true
-        rec.startRecording()
-        thread = Thread({ loop(rec) }, "jarvis-kws").also { it.start() }
+    }
+
+    private fun runListener(rec: AudioRecord) {
+        val worker = Thread.currentThread()
+        val failure = try {
+            loop(rec)
+            null
+        } catch (error: Throwable) {
+            error
+        } finally {
+            runCatching { rec.release() }
+        }
+        main.post {
+            if (thread !== worker) return@post
+            thread = null
+            if (released) {
+                runCatching { spotter.release() }
+            } else if (recorder === rec) {
+                recorder = null
+                if (failure != null) onFailure(failure)
+            }
+        }
     }
 
     private fun loop(rec: AudioRecord) {
         val stream = spotter.createStream("")
-        val pcm = ShortArray(CHUNK)
-        val samples = FloatArray(CHUNK)
         try {
-            while (running) {
+            val pcm = ShortArray(CHUNK)
+            val samples = FloatArray(CHUNK)
+            while (recorder === rec) {
                 val n = rec.read(pcm, 0, pcm.size)
-                if (n <= 0) continue
+                if (recorder !== rec) break
+                check(n >= 0) { "microphone read failed ($n)" }
+                if (n == 0) continue
                 for (i in 0 until n) samples[i] = pcm[i] / 32768f
                 stream.acceptWaveform(if (n == CHUNK) samples else samples.copyOf(n), SAMPLE_RATE)
-                while (running && spotter.isReady(stream)) spotter.decode(stream)
+                while (recorder === rec && spotter.isReady(stream)) spotter.decode(stream)
                 val word = spotter.getResult(stream).keyword
                 if (word.isNotBlank()) {
                     spotter.reset(stream) // start fresh so one "Jarvis" fires once
-                    main.post { if (running) onWake(word) }
+                    main.post { if (recorder === rec) onWake(word) }
                 }
             }
-        } catch (e: Throwable) {
-            // Mic or model error: stop quietly; the service falls back on the next start.
         } finally {
             stream.release()
         }
@@ -103,17 +134,19 @@ class KwsWake(ctx: Context, private val onWake: (String) -> Unit) {
 
     /** Stops listening and frees the microphone, so the speech recogniser can use it. */
     fun stop() {
-        running = false
-        try { recorder?.stop() } catch (e: Throwable) {}
-        try { thread?.join(500) } catch (e: Throwable) {}
-        try { recorder?.release() } catch (e: Throwable) {}
+        val rec = recorder
         recorder = null
-        thread = null
+        runCatching { rec?.stop() }
+        runCatching { thread?.join(500) }
+        if (thread?.isAlive != true) thread = null
     }
 
     fun release() {
+        if (released) return
+        released = true
         stop()
-        try { spotter.release() } catch (e: Throwable) {}
+        // A worker still in native code will release the model after closing its stream.
+        if (thread == null) runCatching { spotter.release() }
     }
 
     private companion object {

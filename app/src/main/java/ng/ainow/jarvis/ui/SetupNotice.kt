@@ -11,7 +11,7 @@ import android.provider.Settings
 /**
  * Android won't let Jarvis open any screen from the background while its accessibility service is
  * off, not even its own. A notification the user taps is allowed, so Jarvis posts one:
- *   tap the notification -> the Jarvis screen, which says accessibility is off and focuses Step 1
+ *   tap the notification -> the Accessibility and permissions section in Jarvis
  *   tap "Turn on"        -> Android's accessibility settings directly
  * It is removed once the accessibility service connects.
  */

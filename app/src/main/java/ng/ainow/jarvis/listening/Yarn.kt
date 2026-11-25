@@ -144,7 +144,11 @@ object Yarn {
      * One command turn: streams the microphone to YarnGPT until the user stops talking, then
      * reports the text once. Billed per 15-second block, so each turn is kept short.
      */
-    class Listener(private val key: String, private val ears: Ears) {
+    class Listener(
+        private val key: String,
+        private val ears: Ears,
+        private val waitForSpeechMs: Long = NO_SPEECH_MS,
+    ) {
         private val main = Handler(Looper.getMainLooper())
         @Volatile private var stopped = false
         @Volatile private var started = false
@@ -158,7 +162,7 @@ object Yarn {
             const val RATE = 16000
             const val CHUNK = 4000          // 125 ms of audio
             const val MAX_MS = 10000        // longest command
-            const val NO_SPEECH_MS = 6000   // give up if nothing is said
+            const val NO_SPEECH_MS = 6000L  // regular command's initial silence allowance
             const val END_QUIET_MS = 900    // this much quiet after speech ends the turn
         }
 
@@ -217,6 +221,7 @@ object Yarn {
             var noise = -1.0
             var speech = false
             var lastLoud = 0L
+            val maxTurnMs = maxOf(MAX_MS.toLong(), waitForSpeechMs)
             try {
                 rec.startRecording()
                 while (!stopped) {
@@ -242,8 +247,8 @@ object Yarn {
                         val elapsed = now - t0
                         when {
                             speech && now - lastLoud >= END_QUIET_MS -> finalizeTurn()
-                            !speech && elapsed >= NO_SPEECH_MS -> finalizeTurn()
-                            elapsed >= MAX_MS -> finalizeTurn()
+                            !speech && elapsed >= waitForSpeechMs -> finalizeTurn()
+                            elapsed >= maxTurnMs -> finalizeTurn()
                         }
                     }
                 }
